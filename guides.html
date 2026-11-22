@@ -7,7 +7,7 @@
 <body>
 <h1>Sneaky Sasquatch (unofficial)</h1>
 <h2>Mod guides</h2>
-<p>All Mac (App Store version). On iPhone and iPad you can't get at the save files, so none of this works there.</p>
+<p>All of this is for the Mac App Store version. On iPhone and iPad you can't get at the save files, so none of this works there.</p>
 
 <ul>
 <li><a href="#where">Where your save is</a></li>
@@ -21,26 +21,26 @@
 </ul>
 
 <h3 id="where">Where your save is</h3>
-<p>In Finder, hit Cmd+Shift+G and paste:</p>
+<p>In Finder, hit Cmd+Shift+G and paste this.</p>
 <pre>~/Library/Containers/com.rac7.SneakySasquatchMac/Data/Library/Application Support/com.rac7.SneakySasquatchMac/</pre>
 <p>The folders <b>default</b>, <b>default2</b> and <b>default3</b> are save slots 1, 2 and 3. Everything ending in .stuff is plain JSON. No encryption, TextEdit opens it fine.</p>
-<p>The ones you'll care about: sasquatch.stuff has coins, the day, hunger and which scene you're in. variables.stuff has the quest flags and a pile of other settings, speed limits included. inventory.stuff is your items, and the map folder has one file per scene.</p>
+<p>The ones you'll care about. sasquatch.stuff has coins, the day, hunger and which scene you're in. variables.stuff has the quest flags and a pile of other settings, speed limits included. inventory.stuff is your items, and the map folder has one file per scene.</p>
 
 <h3 id="backup">Backing up</h3>
-<p>Quit the game first. Then copy the slot folder (say, default) somewhere safe. Restoring is the same thing backwards, again with the game closed. If the game is running it'll just write over whatever you put there.</p>
+<p>Quit the game first. Then copy the slot folder, like default, somewhere safe. Restoring is the same thing backwards, again with the game closed. If the game is running it'll just write over whatever you put there.</p>
 
 <h3 id="install">Installing a save</h3>
 <ol>
 <li>Quit the game.</li>
 <li>Back up the slot you're about to use.</li>
 <li>Unzip the save. You'll get a folder called default.</li>
-<li>Rename it for the slot you want: default, default2 or default3.</li>
+<li>Rename it for the slot you want, so default, default2 or default3.</li>
 <li>Drop it in the save folder and replace the old one.</li>
 <li>Start the game and load that slot.</li>
 </ol>
 
 <h3 id="speed">Speed limit past the slider</h3>
-<p>As mayor you get a speed limit slider with a pretty small range. The actual values are in variables.stuff, though: <b>PD</b> is the town limit and <b>Yt</b> is the highway. The game takes whatever number you put there, 999999 or even negative, and doesn't clamp it. mayor.stuff only remembers where the slider was, so editing it does nothing. The <a href="editor.html">save editor</a> can set both.</p>
+<p>As mayor you get a speed limit slider with a pretty small range. The actual values are in variables.stuff, though. <b>PD</b> is the town limit and <b>Yt</b> is the highway. The game takes whatever number you put there, 999999 or even negative, and doesn't clamp it. mayor.stuff only remembers where the slider was, so editing it does nothing. The <a href="editor.html">save editor</a> can set both.</p>
 
 <h3 id="teleport">Teleporting</h3>
 <p>In sasquatch.stuff, <b>current_map</b> is the ID of the scene you're in. It's a long hex string, not the scene name. Swap in another scene's ID and you load in there next time. The <a href="editor.html">save editor</a> has the full list so you don't have to dig the IDs out yourself. Expect weirdness if you jump somewhere the story hasn't unlocked yet.</p>

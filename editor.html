@@ -7,24 +7,24 @@
 <body>
 <h1>Sneaky Sasquatch save editor</h1>
 <p>Mac saves only. It all runs in your browser and nothing gets uploaded.</p>
-<p><b>Back up your save first</b> (<a href="guides.html#backup">how</a>), and keep the game closed while you swap files.</p>
+<p><b>Back up your save first</b>, here's <a href="guides.html#backup">how</a>. Keep the game closed while you swap files.</p>
 
 <h2>1. Load your save</h2>
-<p>Open your save folder (<a href="guides.html#where">where is it?</a>), go into the slot (default, default2 or default3) and pick <b>sasquatch.stuff</b> and <b>variables.stuff</b>. Both at once is fine.</p>
+<p>Open your <a href="guides.html#where">save folder</a>, go into the slot folder, which is default, default2 or default3, and pick <b>sasquatch.stuff</b> and <b>variables.stuff</b>. Both at once is fine.</p>
 <p><input type="file" id="files" multiple accept=".stuff"></p>
 <p id="status">no files loaded</p>
 
 <h2>2. Change things</h2>
-<p>Coins: <input type="number" id="coins" min="0"> (sasquatch.stuff)</p>
-<p>Town speed limit: <input type="number" id="pd"> Highway speed limit: <input type="number" id="yt"> (variables.stuff, no limit, ignores the slider)</p>
-<p>Finish chapters (variables.stuff):<br>
+<p>Coins <input type="number" id="coins" min="0"> in sasquatch.stuff</p>
+<p>Town speed limit <input type="number" id="pd"> Highway speed limit <input type="number" id="yt"> in variables.stuff. No limit, it ignores the slider</p>
+<p>Finish chapters, in variables.stuff<br>
 <input type="checkbox" id="tut"> tutorials<br>
 <input type="checkbox" id="c1"> chapter 1<br>
 <input type="checkbox" id="c2"> chapter 2<br>
 <input type="checkbox" id="c3"> chapter 3<br>
 <input type="checkbox" id="c4"> chapter 4<br>
 <input type="checkbox" id="unl"> unlock everything flags</p>
-<p>Teleport to (sasquatch.stuff): <select id="tp"><option value="">don't teleport</option></select><br>
+<p>Teleport to <select id="tp"><option value="">don't teleport</option></select><br>
 You spawn at that scene's first entrance. Places you haven't reached in the story can act strange.</p>
 
 <h2>3. Save the new files</h2>
