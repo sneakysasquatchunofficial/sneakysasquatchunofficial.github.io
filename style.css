@@ -44,7 +44,7 @@ a:hover { color: var(--bark); }
   text-decoration: none;
 }
 .brand:hover { color: #fff; }
-.brand svg { flex: none; }
+.brand img { flex: none; display: block; margin: -6px 0; }
 .brand-name {
   font-size: 28px;
   font-weight: bold;
