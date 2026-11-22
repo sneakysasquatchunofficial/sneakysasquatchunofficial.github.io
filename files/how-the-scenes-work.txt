@@ -1,0 +1,231 @@
+SNEAKY SASQUATCH - HOW THE SCENES WORK
+=======================================
+Notes from modding the game with SSMod (version 2.1.9, checked against 2.2).
+Written in my own words from looking at the game's files and logs. No game code is copied here.
+
+
+1. THE BASICS
+-------------
+- Sneaky Sasquatch is a Unity game. In Unity a "scene" is one saved world: every object in a place,
+  where it is, and what parts it has.
+- The game has 424 scenes.
+- Each scene is stored as a file called levelN (level0, level1, ... level423) in:
+      Sasquatch.app/Contents/Resources/Data/
+- The numbers mean nothing by themselves. The file "globalgamemanagers" holds the build list that
+  matches each number to a name. Examples:
+      level7    Campground_CampsiteB
+      level8    Campground_Hub
+      level9    Campground_RVPark
+      level118  Town
+      level346  Seaport_Layer_Chapter 4 Rescue & Boss Showdown
+- SSMod reads that list for you:  ./ssmod scenes [filter]
+
+
+2. WHAT IS INSIDE A SCENE FILE
+------------------------------
+- A scene file is a list of objects, each with an id number (a "path id").
+- The main kinds of object:
+    GameObject      a thing in the world (a tree, a camper, a door zone). Just a name and a list of parts.
+    Transform       where a GameObject is, its size and rotation, and which object it hangs under.
+    Components      the parts that make it do things: sprites, colliders, physics bodies, sounds,
+                    and the game's own scripts (MonoBehaviours).
+- Objects point at each other by id. A camper's body points at its animation controller, its
+  collider, its bones, and so on.
+- A scene does NOT hold most art or sounds. Those live in shared files and the scene points at them:
+    sharedassets0.assets     art and models used all over the game
+    sharedassetsN.assets     art used by only one scene (N matches the level number)
+    resources.assets         items, flags, sounds, weather, dialogue data and other game data
+- So a scene is mostly "what is where and how it is wired up", not the pictures themselves.
+
+
+3. KINDS OF SCENES
+------------------
+3.1 Areas (the places you walk around)
+    Campground_Hub, Campground_CampsiteA/B/CD, Campground_RVPark, Campground_Lake, Campground_River,
+    Campground_ParkingLot, Town, Stripmall, Seaport, Marina, Highway_West, Highway_4WayIntersection,
+    Highway_East_MountainPass, Racetrack, DirtPark_Track, Golfcourse, GolfCourse_Long Drive,
+    GolfCourse_DrivingRange, Farm, Farm Town, Island, Ocean, Ocean Rocky, Snow Main, Snow Peak,
+    Snow Mid Mountain, Snow Hot Springs, Snow Track, SkiSlope, LumberMill, Museum, Bird Sanctuary,
+    Apartments, Sewer and its rooms.
+
+3.2 Interiors that are their own scene
+    Campground_TreeInterior, Campground_CaveInterior, Campground_WaterfallInterior, Island_CaveInterior,
+    Snow_CaveInterior, GolfCourse_CaveInterior, Farm_Cave, Office_Basement, Office_Floor_2 to _6,
+    TownHall_Floor_2/3/B1/B2, PoliceStation_Floor_2, FireStation_Floor_2, Seaport_Office_Floor_2,
+    Seaport_Office_Floor_Tower, Sewer_Fox_Den, Sewer_SecretWarehouse.
+    Other buildings (shops, the bank, the RV) sit INSIDE their area scene instead. When you walk in,
+    the game raises an "entered a building" event rather than loading a new scene.
+
+3.3 Underwater scenes
+    Many areas with water have a twin ending in _Underwater (Campground_Lake_Underwater,
+    Island_Underwater, Marina_Underwater, Highway_West_Underwater...). Diving takes you there.
+
+3.4 Results and event scenes
+    GolfCourse_Results, Racetrack_Results, Snow EventResults: the podium and score screens after
+    races and events.
+
+3.5 Layers (the biggest group: 319 of the 424 scenes)
+    A layer is a scene that is loaded ON TOP of an area, not instead of it. Its name is the area,
+    then _Layer_, then what it adds:
+        Seaport_Layer_Chapter 4 Boss Phase 4 (Satch Captured)
+        Seaport_Layer_Chapter 4 Rescue & Boss Showdown
+    Layers hold the extra characters, cutscenes, props and triggers for one story moment, one job,
+    one event or one season. The area stays the same and the layers change what is in it.
+    Areas with the most layers:
+        Campground_Hub        50
+        Town                  25
+        Racetrack_Entrance    22
+        Seaport               17
+        DirtPark_Track        15
+        Island                14
+        Snow Snowball         13
+        Golfcourse            11
+        Farm                  11
+        Snow Main             10
+        Campground_ParkingLot  9
+        Stripmall              8
+    Example: the boss fight's Junior ("Camper (Pemby Jr)") and his "MonsterMuscles" live in the
+    Seaport showdown layer, not in Seaport itself. That is why Monster Mode copies him from the layer.
+
+3.6 Special scenes with no sasquatch to control
+    Title                      the title screen
+    Elevator_Transition,
+    Elevator_Transition_Office the short elevator ride between floors
+    ArcadeSimulatorGame        the arcade game world
+    SurfGame                   the surfing minigame
+    TestInputManager, Test_GameCenter   developer test scenes
+    SSMod's "everywhere" skips all of these, plus every layer.
+
+
+4. WHAT EVERY AREA HAS
+---------------------
+- LevelController: the scene's own manager object.
+- AreaBounds: the edge of the walkable world.
+- Custom Frame Bounds: how far the camera may scroll.
+- Custom Pathfind Area: where NPCs are allowed to walk (they plan routes inside it).
+- Exits: trigger zones near the edges. Each exit leads to another scene and a named entrance there
+  (East, West, North, South, or a named spot). Walk into one and the game loads the next scene and
+  puts you at the matching entrance.
+- Doors: walk-through zones for interiors. Same idea as exits, but for buildings.
+- Spawn and entrance points: where you appear when you arrive from each direction.
+- Activators: objects that switch other objects on or off depending on story flags. This is how
+  a place changes as the story moves on, without a new scene.
+- Patrol routes: paths that campers and rangers walk along, with pauses and actions.
+- Interaction spots: the things you can press (talk, sit, check, pick up), each with a trigger area.
+- Sounds and lights: ambient sound zones, light sources for night.
+
+
+5. HOW DEPTH AND DRAWING WORK
+-----------------------------
+- Physics is flat 2D: Rigidbody2D bodies and 2D colliders (boxes, circles, polygons).
+- Characters are 3D models on standard humanoid skeletons, drawn into that 2D world.
+- Things that are lower on the screen are drawn in front. Each object gets a depth (z) from its
+  height on the screen (y), so the sasquatch walks behind a tree above it and in front of a tree
+  below it.
+- Some objects add a small nudge forward or back so things at the same height still sort right.
+- Floors and ground pictures use a separate "background layer" system and stack on top of each
+  other by layer number instead.
+- Physics layers decide what bumps into what. The named ones include:
+      0 Default      8 Player       9 Actor        10 Vehicle
+      4 Water        12 Container   17 BuildingExterior
+      23 WaterVehicle    26 DeepWater    27 VehicleBlocker
+  Monster Mode looks for cars on layer 10 (mask 1024).
+
+
+6. LOADING, LEAVING AND SAVING
+------------------------------
+- Going through an exit unloads the old scene and loads the new one. The game log shows it as
+  "Unloading N Unused Serialized files" and "Unloading N unused Assets".
+- Everything that belonged to the old scene is gone after that. This is why a mod that should
+  work "everywhere" needs one copy in every area: about 98 scenes.
+- A few managers survive scene changes and stay loaded the whole time (the backpack and inventory
+  UI work like this). That is the idea behind the "faster install" plan: one manager that stays
+  loaded instead of 98 copies.
+- Layers are loaded together with their area when the story, job or event calls for them.
+- The save file remembers which area you were in and which entrance you came through. The log
+  shows it on load, for example:
+      Resume game. level=Town entrance=East
+- Saves also sync to iCloud. If your iCloud is full the log shows "Quota exceeded", but the local
+  save still works.
+
+
+7. CHARACTERS INSIDE A SCENE
+----------------------------
+- Every person and creature is a GameActor: it moves, animates, and raises events like entering a
+  building, sitting in a chair or getting into a vehicle.
+- Human NPCs are Campers. A camper has:
+      a body (GameActor, physics body, collider)
+      a look (skin, shirt, pants and shoe colours, outfit)
+      senses: vision, hearing and smell, each its own child object
+      an AI behaviour tree that decides what it does
+      optional patrol routes and dialogue
+- A camper's skeleton is a full humanoid rig (spine, arms, hands, fingers, head, eyes).
+- In a scene, each character is one GameObject with all of those as child objects. Copying a
+  character to another scene means copying that whole tree, plus anything outside it that it
+  points to (like Junior's MonsterMuscles).
+
+
+8. HOW SCENES TALK TO GAME DATA
+-------------------------------
+- Story flags (true/false switches) live in resources.assets. Scenes point at them for activators,
+  conditions and dialogue.
+- Items live in an item library in resources.assets. A pickup in a scene points at an item there.
+- Dialogue and behaviour are NodeCanvas graphs: dialogue trees and behaviour trees stored as data.
+  A scene object holds the graph and a "blackboard" of its variables.
+- Weather presets (Clear, Rainy, Snowy, SnowyHeavy) are data assets too.
+- Sounds are FMOD sound banks. Many have readable names like sfx_blastOff.
+
+
+9. HOW SSMOD WORKS WITH SCENES
+------------------------------
+- SSMod never edits the game's code. It edits scene files and data files, then puts the edited
+  copies into the game folder. A clean copy of every file it touches is kept in base/ so installs
+  can be repeated and undone (./ssmod uninstall).
+- Finding things:
+      ./ssmod scenes [filter]            scene names
+      ./ssmod where SCENE [filter]       named objects in a scene with their x, y
+      ./ssmod assets CLASS [filter]      data assets, e.g. AudioAsset, WeatherData
+      ./ssmod functions [filter]         game functions a script can call
+- Adding things to a scene:
+      npc, spot, pickup        built from copies of real game objects (a Lake Maze camper, Doctor
+                               Duck's talk object, Town's "Check shoes" spot, a campsite pickup)
+      place "Name" from "Scene" in "Scene" at (x, y)
+                               copies any object from any scene into another, with options:
+                               scale, size, color, rotate, flip, front, layer, text, bob, animate,
+                               showIf / hideIf, as Name, with "Other", puppet
+      hud                      text or pictures stuck to the screen
+      area                     a brand-new scene, added to the end of the build list
+      connect / door           new exits and doors between scenes
+- "everywhere": SSMod makes one copy per playable scene (about 98), skipping layers, the title,
+  test scenes, minigames and elevator rides.
+- Copying between scenes: the copier brings along the object's whole tree plus the local assets it
+  uses (meshes, materials). Pointers to other scenes' files are re-linked. Pointers to objects
+  outside the copied tree are lost unless they are copied together with "with".
+- Builds reuse unchanged scenes from last time, so editing one mod usually rebuilds only the scenes
+  that mod touches.
+
+
+10. HANDY FACTS
+---------------
+- Scene count: 424. Layers: 319. Playable "everywhere" scenes: about 98.
+- Groups by name (all scenes, layers included):
+      Campground 122, Racetrack 34, Town 26, Seaport 20, DirtPark 19, Island 17, Sewer 15,
+      Highway 15, Snow Snowball 14, GolfCourse 14, Farm 13, Golfcourse 12, Snow Main 11,
+      Stripmall 9, Marina 9, TownHall 7, Office 7, Museum 5, LumberMill 5
+- The golf course appears under two spellings: GolfCourse_ and Golfcourse.
+- The Campground hub is the busiest scene in the game: it has 50 layers of its own.
+- Scene objects can share a name. In that case pick one by its path, like "Bank/Counter" or
+  "Fire_Lit/flames".
+- The RV park campfire's flames ("Fire_Lit/flames" in Campground_RVPark) are a plain particle
+  effect, which makes them easy to copy. Monster Mode uses them for burning cars.
+- Town has "Building Fire Elements" and "Door Smoke" objects for the firefighter job. They only
+  show fire and smoke when a fire job is running.
+
+
+11. WHERE TO LOOK ON THIS MAC
+----------------------------
+- Scene list and object finder:   ~/Downloads/SSMod  (./ssmod scenes, ./ssmod where)
+- SSMod's scene code:             ~/Downloads/SSMod/ssmodlang/game.py and unity.py
+- Mod language guide:             ~/Downloads/SSMod/SSMOD.md
+- Readable game code (private):   ~/Downloads/SasquatchDecompiled/csharp
+- Game logs:  ~/Library/Containers/com.rac7.SneakySasquatchMac/Data/Library/Logs/RAC7/Sasquatch/Player.log

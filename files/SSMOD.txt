@@ -1,0 +1,675 @@
+# SSMod: the `.ssmod` mod language for Sneaky Sasquatch
+
+`.ssmod` files are small, C#-style scripts that describe a mod: new characters, conversations, items,
+interaction spots and pickups. The `ssmod` tool compiles them into the game's own data and installs them into
+**Sasquatch Hidden Content** (never the real app). You don't touch Unity files, path IDs or Python.
+
+> The game can't run new C# code: it's compiled into the app, and changing the app kills it at the Apple Arcade
+> check. So `.ssmod` *looks* like C#, but it's compiled into game data (dialogue graphs, objects, items).
+
+## Quick start
+
+```bash
+cd ~/Downloads/SSMod
+./ssmod new "My First Mod"        # creates mods/my_first_mod.ssmod from a template
+./ssmod check                     # compile every mod in mods/ and report errors (installs nothing)
+./ssmod install                   # quit the game first; saves are backed up automatically
+```
+
+You can also double-click **Install Mods.command** instead of typing `./ssmod install`.
+To remove a mod: `./ssmod disable my_first_mod` and install again. `./ssmod uninstall` puts every file back.
+
+## A whole mod
+
+```csharp
+mod "Hot Dog Heaven" by "LPP Entertainment" version 1.0;
+
+flag MetVendor;
+
+item MegaDog {
+    name = "Mega Dog";
+    description = "A foot-long hot dog.";
+    icon = sprite("hotdog");
+}
+
+npc Vendor in "Campground_Hub" at "Doctor Duck" + (180, 60) {
+    look { shirt = #D62828; pants = #F4F1DE; }
+    dialogue {
+        if (!MetVendor) { say "Welcome!"; set MetVendor; }
+        choice {
+            "Buy one (25 coins)" => {
+                if (coins >= 25) { take coins 25; give MegaDog; say "Enjoy!"; }
+                else say "Not enough coins.";
+            }
+            "No thanks" => say "Bye!";
+        }
+    }
+}
+
+pickup MegaDog x 3 in "Campground_Hub" at (1800, 20);
+```
+
+More in `examples/`.
+
+## Declarations (top level)
+
+| Declaration | Meaning |
+|---|---|
+| `mod "Name" by "Author" version 1.0;` | Required first line. The name must be unique among your mods. |
+| `flag A, B, C;` | Yes/no memories that are saved with your game (start as "no"). |
+| `item Name { ... }` | A brand-new item (see below). |
+| `npc Name in "Scene" at POS { ... }` | A person you can talk to. |
+| `spot Name in "Scene" at POS { ... }` | An invisible action-button area (sign, computer, anything) that runs a dialogue. |
+| `pickup Item [x N] in "Scene" at POS [, POS ...];` | Items lying on the ground. They come back when the area reloads. |
+| `script Name in "Scene" [by NpcName] { code }` | **Code that runs by itself** while you're in that scene (see Scripts). |
+
+### Positions (`POS`)
+* `(x, y)`: world coordinates in that scene.
+* `"Object name"` or `"Object name" + (dx, dy)`: relative to a named object in the scene.
+  `./ssmod where "Campground_Hub"` lists names and positions; `./ssmod where "Campground_Hub" duck` filters them.
+* For a `spot`, the position is where the player **stands** (the button area reaches a little below it).
+  Place spots in open floor, not on top of furniture.
+
+### Scenes
+Use the scene's name: `"Campground_Hub"`, `"Town"`, `"Stripmall"`, `"LPP_Floor_3"`... (`./ssmod scenes town`).
+
+### item properties
+| Property | Example | Default |
+|---|---|---|
+| `name` | `"Mega Dog"` | the item's name |
+| `description` | `"Smells amazing."` | empty |
+| `icon` | `sprite("hotdog")` | the base item's picture |
+| `base` | `"Soda"` | a soda cup: which existing item it behaves like |
+
+`./ssmod sprites hot` lists picture names. `./ssmod items fish` lists game items.
+
+### npc properties
+| Property | Example | Meaning |
+|---|---|---|
+| `look { shirt = #RRGGBB; pants = #RRGGBB; }` | `#FF8800` | clothes colours |
+| `actor = "Ranger";` | see `./ssmod actors` | use a built-in character look instead |
+| `bubble = true;` | | a "?" floats above them |
+| `needsDisguise = true;` | | humans only talk if you're disguised |
+
+### more `look` options
+Every colour takes `#RRGGBB`: `shirt`, `pants`, `skin`, `hair`, `beard` (also gives them a beard), `eyes`, `shoes`,
+`socks`, `gloves` (also puts gloves on). Plus `shirtType = None | NoSleeves | ShortSleeve | LongSleeve;`,
+`pantsType = None | Shorts | Full | Capri;`, `shoeType = None | Normal | Socks | Boot | KneeBoot | TallSocks;` and
+`chubby = 0.7;` (0 to 1). A typo is an error with a suggestion, not silently ignored.
+
+`scale = 1.5;` (on the npc, outside `look`) makes the whole character bigger or smaller.
+
+```csharp
+npc Coach in "Campground_Hub" at (1200, 40) {
+    look { shirt = #D62828; pants = #FFFFFF; skin = #C68642; hair = #3D2314; beard = #3D2314;
+           shirtType = ShortSleeve; pantsType = Shorts; shoeType = TallSocks; chubby = 0.4; }
+    scale = 1.2;
+}
+```
+
+### spot properties
+`bubble = false;` hides the "?" that spots show by default.
+
+## Shops (one block)
+
+```csharp
+shop Counter in "Campground_Hub" at (1200, -40) {
+    greeting = "Welcome!";                 // optional: greeting, thanks, broke, bye
+    sell Slushie for 15;
+    sell JawBreak for 5 as "Jawbreaker";   // `as` = the name shown in the menu
+    sell Nachos for 30;
+    sell Jerky for 45;                     // more than three items: a "More..." page is added for you
+}
+```
+A shop is a `spot` whose menu, coin checks and messages are written for you. Stand on it and press the action button.
+
+## Dialogue
+
+A `dialogue { ... }` block reads top to bottom, like C#.
+
+| Command | Example |
+|---|---|
+| say something | `say "Hello!";` (or just `"Hello!";`) |
+| if / else | `if (MetVendor && coins >= 10) { ... } else if (has(Hotdog)) { ... } else { ... }` |
+| choice (up to 4) | `choice { "Yes" => { ... } "No" => say "Ok."; }` or with its own question: `choice "Buy one?" { ... }` |
+| flags | `set MetVendor;` `clear MetVendor;` |
+| items | `give MegaDog;` `give Hotdog 3;` `take Hotdog;` `take Soda 5;` |
+| coins | `give coins 100;` `take coins 25;` |
+| disguise | `give disguise "Disguise_Ranger";` (`./ssmod disguises`) |
+| typed text | `input "YOUR NAME" -> Name;` then `say "Hi [Name]!";` |
+| stop | `end;` |
+
+**A menu needs a line of speech.** The game draws the options on the speech box of the line before them, so a
+`choice` right after an `if` (or first in a block) would show nothing and freeze the player. SSMod now always puts
+a line there: the `say` just before the choice, the question you give (`choice "Buy one?" { ... }`), or
+"What'll it be?" if you gave neither (it tells you when it did that).
+
+**Conditions:** a flag name (`MetVendor`), `has(Item)` or `has(Item, 3)`, `coins >= 25` (also `> < <= ==`),
+combined with `&&` (and), `||` (or), `!` (not) and parentheses.
+
+**Text styles** (the game's own tags): `<item>green highlight</item>`, `<shake>shaky</shake>`, `<price>50</price>`.
+
+`[Name]` shows text typed with `input` **earlier in the same conversation**. (Remembering it in a later
+conversation isn't supported yet.)
+
+## Dialogue extras
+
+```csharp
+once { say "First time here? Welcome!"; }          // only ever runs once (a hidden flag remembers)
+random { "Hi!"; "Hello!"; { say "Hey."; give coins 1; } }     // one option per line, or a { block }
+random daily { "Nice day."; "Busy day."; }         // the same pick all day, a new one each day, no repeats
+if (chance(30)) { say "Lucky you."; }              // 30% of the time
+if (hour >= 20) { say "Late, isn't it?"; }         // the game clock, 0-24 (20.5 = 8:30 PM)
+if (weather == Rainy) { ... }                      // Clear, Rainy, Snowy, SnowyHeavy (== or !=)
+```
+`chance`, `hour` and `weather` work in scripts and behaviours too. (Timed choices aren't possible: this game's
+choice menu has no timer.)
+
+## Behaviours (npcs with a life of their own)
+
+```csharp
+npc Ranger_Pat in "Campground_Hub" at (1800, 300) {
+    dialogue { say "Hi!"; }
+    behavior {                    // runs by itself while the scene is loaded; it's a script with the npc as its body
+        forever {
+            wander 300;           // walk to a random spot up to 300 away
+            wait random 2 to 5;
+            if (chance(30)) { walk to player within 150; face player; look at player; wait 2; look away; }
+        }
+    }
+}
+```
+
+| Command | What the npc does |
+|---|---|
+| `walk to (x, y);` / `run to ...` / `jog to ...` / `sneak to ...` | go there (finds a path around things) |
+| `walk to player [within 150];` / `walk to "Object" [within 80];` | go up to the player / an object |
+| `walk by (dx, dy);` | move relative to where it is |
+| `wander 300 [running];` | a random spot nearby |
+| `face player;` / `face "Object";` / `face Up;` | turn (Up, Down, Left, Right, UpLeft, UpRight, DownLeft, DownRight) |
+| `look at player;` / `look away;` | turn its head to follow the player |
+| `sit [for 10];` | sit on a chair nearby |
+| `suspicious;` | becomes suspicious of you |
+| `alert [CrimeType];` | calls the rangers (default `Called911`) |
+| `leave;` | walks off the map |
+| `wait random 2 to 5;` | wait a random time (works in every script) |
+
+Everything else scripts have works in a behavior too (`speak`, `call`, flags, variables, `if`, `while`, ...).
+The same commands work in `script Name in "Scene" by NpcName { }`.
+
+## Sounds
+
+```csharp
+sound Whistle from "sounds/whistle.wav" [volume 0.8];   // your own sound (mono or stereo)
+...
+play Whistle;                      // in a dialogue, a script or a behavior
+play Whistle loop;                 // keeps playing
+play asset "sfx_blastOff";         // one of the game's own sounds (./ssmod assets AudioAsset lists them)
+```
+* `.wav` works everywhere; `.mp3`, `.ogg`, `.m4a` too if ffmpeg is installed. Up to 5 minutes per sound.
+* Sounds are stored as uncompressed 16-bit audio in the game's own sound-bank format (FMOD FSB5), in
+  `Data/ssmod.resource` (one file for every mod's sounds; `./ssmod uninstall` removes it).
+* Keep sounds short: a minute of stereo sound is about 10 MB.
+
+## Functions, templates, parallel, controls
+
+```csharp
+function Reward(amount, who) {                 // your own "methods": used in dialogues and scripts
+    give coins amount;
+    say "Here you go, {who}! {amount} coins.";  // {name} puts a value into text
+}
+... Reward(50, "champ"); ...
+
+template Guard {                               // your own "classes": a kind of npc
+    look { shirt = #1D3557; pants = #000000; }
+    dialogue { say "Move along."; }
+    behavior { forever { wander 200; wait random 1 to 3; } }
+}
+npc Bob from Guard in "Town" at (100, 200) { look { shirt = #FF0000; } }   // its own parts win
+npc Sue from Guard in "Town" at (300, 200);                                   // exactly a Guard
+
+on key "e" in "Campground_Hub" { weather Snowy; }      // a new control: press E in that scene
+
+script Busy in "Campground_Hub" by Bob {
+    parallel {                                  // branches run at the same time (the game's Parallel node)
+        { forever { wander 100; } }
+        { forever { wait 5; speak "Hmm."; } }
+    }
+}
+```
+* Functions are copied in where they're used (they can't call themselves). Values are numbers, `"text"`, names or
+  colours.
+* Keys: Unity key names ("a".."z", "0".."9", "space", "left shift", "up", ...). Keyboard only.
+* `in "everywhere"` (for `on key`, `script` and `hud`): a copy goes into every place you can walk around, every
+  area and every building, because a scene's objects are gone when you leave it. The first install builds all
+  ~120 scenes (several minutes); later installs reuse them. Each copy starts fresh when you enter, so a toggle
+  (like `var off`) resets when you change area; game-wide things like `timescale` carry on.
+
+## Writing mods in C#
+
+Put a `.cs` file in `mods/` (or check one with `./ssmod check file.cs`). It's C# syntax, translated line for line
+into SSMod's own language, so errors point at your C# lines. See `examples/csharp_demo.cs`.
+
+```csharp
+using UnityEngine;
+
+[Mod("C# Demo", Author = "Me", Version = "1.0")]
+public class CSharpDemo : Mod
+{
+    bool MetCoach;                                            // bool fields are flags (saved with the game)
+    [Sound("sounds/whistle.wav")] Sound Whistle;
+    [Image("art/ball.png", 40, 40)] Image Ball;
+    [Hud("Town", 0, -215, Color = "#FFD166")] Text Steps = "";  // on-screen text: Steps.text = "...";
+
+    [Npc("Town", "Bus Stop - Townhall", 160, -60)]            // or [Npc("Town", x, y)]; [Spot(...)] works the same
+    class Coach : Npc {
+        Look Look = new Look { Shirt = "#E63946", Pants = "#1D3557" };
+        void Dialogue() {
+            Say("Hi!");
+            switch (Choice("Whistle?", "Yes", "No")) {
+                case "Yes": Whistle.Play(); MetCoach = true; break;
+                case "No": Say("Okay."); break;
+            }
+        }
+        void Behavior() { while (true) { Wander(150); WaitRandom(1, 3); } }
+    }
+
+    void World() { PlaceImage(Ball, "Town", 0, 300, As: Ball); }   // placing things (SSMod.Raw(@"...") for the rest)
+
+    [Script("Town")]                                          // [Script("everywhere")] for every area
+    void Follow() {
+        Transform me = Player.transform;
+        while (true) {
+            Vector2 p = me.position;                         // Vector3 -> Vector2 converts by itself
+            Find<Transform>("Ball").position = new Vector3(p.x, p.y + 100, 0);
+            Wait(0.05f);
+        }
+    }
+
+    [OnKey("j", "Town")]
+    void Jump() { var body = Player.body; body.velocity = new Vector2(0, 3000); }
+}
+```
+
+What you can use:
+* Variables: `var`, `int`, `float`, `bool`, `string`, `Vector2`, `Vector3`, and any game object you get from a call
+  (`Transform me = Player.transform;`). `if`/`else`, `while`, `while (true)`, `for`, `++`, `+=`, maths and comparisons.
+* Positions: `+ - *` and `/` by a number, `new Vector2(x, y)`, `v.x`/`v.y`, casts `(Vector2)v`, and the game's own
+  `Vector2.Distance`, `Vector2.MoveTowards`, ...
+* The game's classes and properties as in Unity: `Player.transform.position`, `Find<Transform>("Name")`,
+  `Find<GameActor>("Doctor Duck")`, `Weather.Snowy` (enum options), static calls like `UnityEngine.Random.Range(1, 4)`.
+* Commands: `Wait(s)`, `WaitRandom(a, b)`, `WaitUntil(Flag)`, `Debug.Log(x)`, `Sound.Play()`, `Text.text = ...`,
+  `Time.timeScale = x`, `Game.SetWeather(Weather.Snowy)`, `Game.GiveCoins(n)`, `Parallel(() => { }, () => { })`,
+  `Say(...)`, `Choice(...)` (in a `switch`), `Wander(r)`, `WalkTo(x, y)`, `RunTo(...)`.
+* Helper methods without an attribute become SSMod functions (copied in where they're used).
+
+What you can't (the game can't run new code): your own classes beyond the mod and its characters, `return`/`break`,
+lists of your own, LINQ, libraries. `SSMod.Raw(@"...")` drops SSMod-language lines in for anything not covered yet.
+
+## Overriding the game's characters
+
+```csharp
+override "Doctor Duck" in "Campground_Hub" {
+    dialogue { say "Quack. I've been modded."; }
+}
+```
+The character keeps everything else; talking to them runs your dialogue instead of theirs (every talk object on
+that object and its children). Careful with characters that run the game's own quests: their quest lines are
+replaced too until you `./ssmod uninstall` or remove the override.
+
+## HUD: text on the screen
+
+```csharp
+hud RaceTimer "Time left: 25" in "Campground_Hub" at (0, 260) [color #FFD166] [scale 1.4] [showIf RaceOn];
+...
+call TMP_Text("RaceTimer").SetText("Time left: {0}", time);    // change it while playing ({0} = the number)
+call TMP_Text("RaceTimer").set_text("Finished!");
+```
+* `at` is measured from the middle of the screen in world units (up is +y); about 250 is near the top.
+* It's the game's own `AnchorIntoCamera` (what keeps the rain on screen) on a text object, drawn on top.
+* It shows while you're in that scene. See `mods/race_the_clock.ssmod`.
+
+## Fields, events and your own objects
+
+```csharp
+GameActor("Doctor Duck").isGhost = true;      // change a public field of an object
+player.isGhost -> ghost;                      // read one into a variable
+place image Tower in "Airport" at (0, 0) as MyTower;          // `as` names your placed object...
+call UnityEngine.Transform("MyTower").set_localScale((2, 2, 1));   // ...so you can call on it
+
+script Doorbell in "Campground_Hub" {
+    forever {
+        waitUntil (event player.OnInteriorChange);   // the moment the game raises that C# event
+        play Ding;
+    }
+}
+```
+* Fields: public fields of the object's class (and its base classes), checked when you build, with suggestions.
+* Events: `event player.OnInteriorChange` (going in/out of a building), `OnChairChange`, `OnHearSound`,
+  `OnPostTeleportEvt`, `OnDespawn`, ... Only events that pass none or one value can be waited for; scripts only.
+* More values: rotations as degrees (`45` where a Quaternion is wanted), rectangles `(x, y, width, height)`.
+* Functions that run over time (they return an IEnumerator, like the game's cutscene helpers) should run to the end
+  before the next line, the way the game's own dialogues use them (not tested yet).
+
+## Writing mods in VS Code
+
+Install the extension in `editor/vscode-ssmod` (copy the folder into `~/.vscode/extensions/`): it colours `.ssmod`
+files and autocompletes every command (`npc`, `behavior`, `hud`, `function`, ...) and all 331 game functions with
+their values. `python3 tools/make_snippets.py` rebuilds the list.
+
+## Debugging
+
+```csharp
+log "talked to the wizard";                 // in a dialogue
+log "roll was " + roll + ", total " + total;   // in a script: any text or calculation
+```
+```bash
+./ssmod log        # your mods' log lines + the script engine's errors from the game's last run
+./ssmod log -f     # keep watching while you play (Ctrl-C to stop)
+./ssmod log --all  # everything the game wrote
+```
+Lines from `log` start with `[SSMod] <mod file>:`. The game writes its log while it runs
+(`~/Library/Containers/com.rac7.SneakySasquatchMac/Data/Library/Logs/RAC7/Sasquatch/Player.log`), so with `-f` you see
+messages the moment they happen, plus errors from a `call` that can't run (wrong situation, missing object, ...).
+`./ssmod log` also shows where you were (the "Resume game" line).
+
+## Faster installs
+
+Each built scene is kept in `build_cache/`. When you install again, a scene is only rebuilt if something that goes
+into it changed: the mods placed in it, the ids of your flags/items/dialogues, its pictures, or SSMod itself.
+Editing one mod usually rebuilds only the scenes that mod touches. `SSMOD_NO_CACHE=1 ./ssmod install` rebuilds
+everything.
+
+## The Bridge: your own code controlling the game
+
+`mods/bridge.ssmod` is a mailbox between the game and any program you write (Python, C#, JavaScript, ...). Your
+program writes small text files into the game's data folder; the bridge reads them four times a second while you
+play, does what they say and deletes them. It writes events back the same way. The game itself stays untouched.
+
+```bash
+./ssmod bridge          # a console: weather Snowy / coins 100 / hud Hello! / music xmas / 911 Fire
+```
+```python
+import sys; sys.path.insert(0, "tools")
+from bridge import Bridge
+b = Bridge()
+b.weather("Snowy"); b.coins(250); b.hud("Hello from Python!")
+for event in b.events():          # "building town" when you go in or out of a building
+    print(event)
+```
+| File (in `<game data>/ssmod_bridge/`) | Does |
+|---|---|
+| `weather.txt` | `Clear`, `Rainy`, `Snowy`, `SnowyHeavy` |
+| `coins.txt` | a number; negative takes coins |
+| `hud.txt` | text shown on screen (empty clears it) |
+| `music.txt` | `halloween` or `xmas` |
+| `911.txt` | `Police`, `Ambulance`, `Fire` |
+| `status.txt` (written by the game) | `ready <place>` when the bridge starts |
+| `event_N.txt` (written by the game) | `building <place>` when you go in or out |
+
+* The bridge runs in the campground, Town, the seaport and the airport; add a line at the bottom of
+  `mods/bridge.ssmod` for more places. It logs its folder (`./ssmod log`), which is how `tools/bridge.py` finds it.
+* Add commands by copying one of the blocks in `mods/bridge.ssmod`: anything a script can do (`call`, `give`,
+  `set`, `play`, ...) can become a command.
+* Your program decides *what* and *when*; the game can only do what the bridge's commands cover.
+
+## Calling the game's own code (`call`)
+
+Dialogues and scripts can run the game's real C# functions, the same way the game's own dialogues and scenes do
+(NodeCanvas reflection tasks): the 345 functions in `NodeCanvasBridge` (the API the developers made for their
+dialogues), every other function in the game's classes, and Unity's own engine functions that are in the build.
+
+```csharp
+call Misc_SetWeather(asset "Weather Snowy", true);   // NodeCanvasBridge is the default class
+call Phone_911_Dispatch(Fire);                       // option names are checked against the game
+call get_CurrentDay() -> day;                        // keep what it gives back...
+say "Today is day [day].";                           // ...and show it in a line
+if (call Fire_GetFireCount() > 0) { say "Fire!"; }   // check what it gives back
+call UnityEngine.Random.Range(1, 7) -> roll;         // any class: Class.Function
+
+// objects
+call UnityEngine.Transform("Doctor Duck/Doctor Duck").set_localScale((2, 2, 1));   // a component of an object in the scene
+call GameActor("Doctor Duck").ResolveActor() -> doc;     // objects can be kept in variables...
+call Actor_SetStinkValue(doc, 1.0);                      // ...passed into functions...
+call doc.SetCanSneak(false, null);                       // ...and called on
+call Actor_SetStinkValue(player, 0.0);                   // the player (a GameActor)
+call Actor_SetStinkValue(object "Doctor Duck", 1.0);     // a scene object passed in directly
+```
+
+* **Values:** numbers, `"text"`, `true`/`false`, option names (`Fire`), colours `#FF8800`, positions `(x, y)` or
+  `(x, y, z)`, `null`, variables, `player`, and objects: `asset "Name"`, `item "Cookies"`, `flag MyFlag`,
+  `disguise "Chef"`, `object "Name in the scene"`.
+* **Objects in the scene:** `Class("name or/path").Function(...)` runs on that object's `Class` component
+  (`UnityEngine.GameObject` means the object itself). Names can be paths when several objects share one; if
+  several match, the one that has the component is used. Your own npcs work too (as `GameActor`).
+* `./ssmod functions` lists the `NodeCanvasBridge` functions; `./ssmod functions GameActor` (any word) searches
+  everything, and marks functions that run on an object `[on a GameActor]`. `./ssmod assets WeatherData` lists
+  assets you can pass.
+* Every call is checked when you build: the name (with suggestions), the number of values, their types, option
+  names, that the object has that component, and that the function exists in *your* version of the game.
+* **How it works:** dialogues are assets and can't point into a scene, so for scene objects SSMod adds a global
+  blackboard to the npc's scene (`SSMod_<mod>_<level>`), exactly how the game's own dialogues reach things like
+  the farm ("Farm/Farm"). Scripts live in the scene and point at objects directly.
+* Some functions expect a situation (a shop open, a vehicle nearby); called out of place they may do nothing.
+  Try new calls on a save you have backed up.
+
+See `mods/weather_wizard.ssmod` (dialogue calls) and `mods/duck_lab.ssmod` (objects, variables, a script).
+
+## Scripts (real code)
+
+A `script` runs in the background from the moment the scene loads: loops, timers, variables, reactions.
+It compiles to a NodeCanvas **behaviour tree**, the same system the game uses for its own AI.
+
+```csharp
+script Race in "Campground_Hub" by Coach {      // "by" = which npc says the speak lines
+    var time = 25;                              // int, decimal (1.5) or true/false
+    forever {
+        waitUntil (RaceOn);                     // pause until a condition is true
+        speak "GO!";                            // chat bubble over the npc
+        weather Rainy;
+        time = 25;
+        while (time > 0 && !near(FinishLine, 90)) {
+            wait 1;                             // seconds
+            time -= 1;                          // = += -= *= /=  (also time++ / time--)
+        }
+        if (near(FinishLine, 90)) { give coins 100; speak "Winner!"; }
+        else speak "Too slow!";
+        clear RaceOn;
+    }
+}
+```
+
+| Command | Meaning |
+|---|---|
+| `var name = value;` | a variable: whole number, decimal, true/false or `"text"` |
+| `name = 5;` `name += 1;` `name--;` | change it |
+| `c = (a + b) * 2 - 1;` | maths with `+ - * /` and brackets (whole numbers and decimals can't be mixed) |
+| `msg = "Day " + day + "!";` / `msg += "...";` | join text; numbers turn into text by themselves |
+| `d = random(1, 6);` `a = max(a, b);` | maths: `abs min max clamp round floor ceil sqrt pow random` (random includes both ends) |
+| `var names = ["Ann", "Bob"];` / `var xs = [] of number;` | a list (text, number, decimal or truefalse) |
+| `add x to names;` `remove x from names;` `clear names;` `names[0] = x;` | change a list |
+| `x = names[1];` `n = count(names);` `w = pick(names);` | read a list (pick = a random item) |
+| `log "text" + x;` | write a line to the game's log (see Debugging) |
+| `wait 2.5;` | pause |
+| `waitUntil (cond);` | pause until `cond` is true (checked 5 times a second) |
+| `if (cond) { } else { }` | branch |
+| `while (cond) { }` | loop while true |
+| `forever { }` / `while (true) { }` | loop forever |
+| `speak "text";` | chat bubble over the script's npc (`by NpcName`) |
+| `weather Clear;` | `Clear`, `Rainy`, `Snowy`, `SnowyHeavy` |
+| `set F; clear F; give ...; take ...;` | same as in dialogues |
+| `call Function(...) [-> x];` | run a game function (see above); `x` becomes a script variable |
+| `player.move(x, y);` | **engine:** instantly move the player (Transform.Translate): blink, dash, teleport |
+| `player.scale(2);` | **engine:** resize the player (Transform.localScale): 1 = normal |
+| `timescale 0.4;` | **engine:** game speed (Time.timeScale): 1 = normal, 0.05-4 |
+
+**Script conditions:** everything dialogues have (including `call ... > 0`), `names contains "Bob"`, plus variable comparisons (`time > 0`, `wins == 3`,
+`done` / `!done` for true/false variables) and `near(Target, distance)`: the player is within `distance` of an
+npc/spot of your mod or of a named scene object (`near("Doctor Duck", 150)`), and `key("1")`: true while a
+key is held (Unity key names: "a".."z", "0".."9", "space", "left shift", "up", "down", "left", "right").
+
+The engine commands call Unity functions through NodeCanvas reflection (they survived the IL2CPP build).
+They're **experimental** until tested in game; see examples/sasquatch_powers.ssmod.
+
+Dialogues and scripts talk to each other through **flags**: a dialogue does `set RaceOn;`, the script waits with
+`waitUntil (RaceOn);`.
+
+## Building (places, rooms, doors)
+
+`examples`-sized mods can add a few objects; `mods/airport.ssmod` (made by `tools/gen_airport.py`) shows a full build.
+
+### New areas
+```csharp
+area Airport_Terminal from "TownHall_Floor_B1" named "Airport Terminal" {
+    room (-6600, 807) to (-3600, 2207);        // stretch the room (areas copied from TownHall_Floor_B1 only)
+    door South at (-5100, 807);                 // a new walk-through exit (facing = the way you walk out)
+    door North at (-4300, 2207) hideIf Locked;  // doors can switch with flags too
+    connect South to "Airport" EastAlt;         // where each exit leads
+    close West;                                 // switch an exit off
+}
+```
+* `room` also clears the basement's furniture, people and elevator and resizes the camera bounds and walk area.
+* In a `room`, a door on the top or bottom wall is a **real door**: the game's wooden door frame with an open door
+  in it, and you leave by walking into the doorway (the exit zone is as wide as the frame). Add `plain` for just an
+  exit zone with no door (a corridor, or a doorway you draw yourself); add `framed` to get the door in an area
+  that isn't a `room`. Arriving puts you a few steps inside.
+* `narrow` gives the doorway-sized exit zone without the wooden door, for a gate or tent flap you draw yourself.
+* `door EXIT at POS [facing North|South|East|West] [framed|plain|narrow] [showIf F] [hideIf F];` Use an exit name the scene doesn't
+  already have (`./ssmod` tells you if it's missing). When two new areas connect, write `connect` in both.
+
+**Trails: a new door in one of the game's own scenes.** Add `at POS` (and the usual door options) after a `connect`
+to put a brand-new door into that scene instead of taking over one of its exits. Its exit name must be one the game
+never uses: `Trail1` ... `Trail40` (each number once per scene).
+```csharp
+area Shop_Trail from "Highway_TreasureSpot" named "Corner Shop Lane" {
+    forest (0, 0) to (3200, 1800);              // an empty grass clearing this size
+    door South at (500, 130) facing South plain;
+    connect South to "Town" Trail1 at (-3125, 3330) facing North plain;   // a new door on Town's north edge
+}
+```
+* `forest (x0, y0) to (x1, y1);` (areas copied from `Highway_TreasureSpot` only) switches everything in the scene off
+  (trees, pond, bushes, the log exit, the treasure dig) and resizes the grass, the camera bounds and the edge you can't
+  walk past (110 in from the sides, 150 from the top, 40 from the bottom). Everything else is yours to draw.
+* `mods/trails.ssmod` (made by `tools/gen_trails.py`, art by `mods/art/make_trail_art.py`) builds eight trails this way.
+
+### Shapes (no generator needed)
+```csharp
+box   in "Scene" at (x, y) size (300, 60) color #8D5524 [front 1] [showIf F] [hideIf F];   // a coloured block, centred
+floor in "Scene" at (x, y) size (2000, 900) color #CFE8D5 [layer 4];                     // flat, from its bottom-left corner
+sign  "GATE 1" in "Scene" at (x, y) [size (260, 56)] [color #1D3557] [textColor #FFFFFF] [front 2];
+label "open 25 hours" in "Scene" at (x, y) [color #FFFFFF] [scale 1.5] [front 3];        // just words
+wall  in "Scene" from (x0, y) to (x1, y) [color #8D99AE] [hideIf DoorOpen];              // solid: you can't walk through
+```
+Walls must be straight (same y for left-right, same x for up-down). A `wall ... hideIf F` is a gate that opens when
+the flag is set. Signs on a room's back wall need a bigger `front` (about 14) to show in front of the wall.
+
+### Custom meshes (your own shapes)
+```csharp
+mesh Star {
+    color #FFD166;                                    // the colour for the shapes that follow
+    polygon (0, 60) (14, 19) (57, 19) (23, -7) (35, -49) (0, -23) (-35, -49) (-23, -7) (-57, 19) (-14, 19);
+    circle (0, 0) 12 #F77F00;                         // centre, radius (a colour can go first or last)
+    rect (-80, -100) (160, 30) #5B3A29;               // bottom-left corner, then width and height
+}
+mesh Rocket from "art/rocket.svg" scale 1.5;          // or draw it in Inkscape / Figma / Illustrator
+
+place mesh Star in "Campground_Hub" at (1900, 300) [scale 0.5] [rotate 15] [flip] [front 1] [color #D62828]
+                                                   [showIf F] [hideIf F];
+```
+* Points are world units around the mesh's own `(0, 0)` (that point lands on the `at` position); `+y` is up.
+* Polygons can be any outline, dents included, listed in order around the edge. One that crosses itself is an error.
+* Shapes are drawn in the order you write them, later ones on top. Each colour becomes one sprite.
+* SVG import takes filled shapes only: paths (curves are smoothed into short lines), rects, circles, ellipses and
+  polygons, with groups and transforms. No strokes, text, gradients or pictures; a hole in a path is filled in.
+  The file is looked up next to the `.ssmod` file. The drawing is centred on itself.
+* `color` on a `place mesh` paints the whole mesh one colour (handy for a second "state" with `showIf`).
+* Meshes are pictures: you can walk through them. Add a `wall` if it should be solid.
+
+See `examples/custom_meshes.ssmod`.
+
+### Pictures (PNG)
+```csharp
+image Watchtower from "art/watchtower.png" [scale 0.8] [size (300, 520)];   // 1 pixel = 1 world unit by default
+place image Watchtower in "Airport" at (-2250, -40) [scale 0.5] [rotate 10] [flip] [front 1] [color #FFE0E0]
+                                                    [bob 10 every 2] [showIf F] [hideIf F];
+```
+* Any PNG (or JPG) you draw: transparency is kept. The file is looked up next to the `.ssmod` file.
+* A picture **stands on its bottom edge**, like a building: `at` is where it touches the ground, and it sorts there,
+  so the player walks in front of it when below that point and behind it when above.
+* `color` tints it (white = unchanged). Pictures bigger than 2048 pixels are scaled down to fit.
+* Each picture becomes a real texture in the scene that uses it (once per scene, however often it is placed).
+* Pictures are art: you can walk through them. Add a `wall` if it should be solid.
+
+See `mods/airport_watchtower.ssmod`.
+
+### Animations (keyframes)
+```csharp
+animation Spin { at 0 { rotate 0; } at 2 { rotate 360; } }                 // loops (write `animation Name once` to play once)
+animation Hover { at 0 { move (0, 0); } at 1 { move (0, 20); scale 1.1; } at 2 { move (0, 0); scale 1; } }
+animation Flap { at 0 { show WingsUp; } at 0.2 { show WingsDown; } at 0.4 { show WingsUp; } }   // frame by frame
+place image Bird in "Airport" at (0, 300) animate Flap;
+```
+* Each `at TIME { }` is a keyframe: `move (dx, dy)` and `rotate` (degrees) and `scale` are relative to how the
+  object is placed; `show Picture` swaps to one of your `image`s (frame-by-frame animation from PNGs).
+* Values glide in a straight line between keys; `show` switches instantly. The animation is as long as its last key.
+* One animation per object. `bob` works alongside, unless the animation also moves the object.
+* It's a real Unity AnimationClip played by the game's own (legacy) Animation component, as some of the game's
+  tutorial animations are. Works on pictures, meshes and copied objects. See `mods/airport_watchtower.ssmod`.
+
+### place options
+`place "Name or/path/to/it" from "Scene" in "Scene" at POS [options];`
+
+| Option | Meaning |
+|---|---|
+| `scale (sx, sy)` | resize (relative) |
+| `size (w, h)` | exact size in world units (objects with a sprite) |
+| `color #RRGGBB` | tint every sprite (white shapes become that colour); on a sign it's the text colour |
+| `rotate 30` | degrees, counter-clockwise |
+| `flip` | mirror left-right |
+| `text "GATE 1"` | new words for a sign (TextMeshPro) object |
+| `front 5` | draw in front of things at the same height (small numbers) |
+| `layer 2` | floors: stack above other floors |
+| `showIf F` / `hideIf F` | only there while the flag is set / not set (gates, barriers) |
+| `animate Name` | play an `animation` (keyframes, see above) |
+| `bob 10 [every 2]` / `bob (dx, dy) [every 2]` | floats up and down (or along dx, dy) and back, every 2 seconds: the game's own `AutoMoverSine`, as on the "?" bubbles. Works on pictures, meshes and copied objects |
+
+Objects with the same name in different places can be picked by path: `"Bank/Counter"`, `"Grocery Store/Register 1"`.
+
+Handy building blocks: a white box `"cardiocontroller/ecg machine/screenmask" from "Stripmall"` (with `size` + `color`),
+a floor tile `"gate area/toll booth/floor" from "Seaport"`, a text sign `"entrance area/trackstart/entrance text" from
+"Racetrack_Entrance"`, walls `"Town Hall B1/InteriorWall_4x1"` / `"Town Hall B1/InteriorWall_1x36" from "TownHall_Floor_B1"`.
+
+### Seeing what you build (no game needed)
+```bash
+SSMOD_KEEP=/tmp/b ./ssmod check mods/airport.ssmod     # keep the built files
+python3 tools/preview.py level428 out.png --box -6700 750 -3500 2450 --scale 0.3   # draw a scene
+python3 tools/objects.py Town counter                  # every object with a sprite, with positions and paths
+python3 tools/propsheet.py sheet.png "Town::Bank/Counter" "Stripmall::VendingMachine"   # props, sizes, anchors
+python3 tools/exits.py Town                            # a scene's exits
+python3 tools/verify.py /tmp/b                          # check built files for broken links
+```
+
+## Housekeeping commands
+| Command | What it does |
+|---|---|
+| `./ssmod new "Name" shop` | start from a template: `npc` (default), `shop`, `room`, `behavior` (an npc with a life of its own), `dialogue` (every dialogue trick), `image` (your own picture; makes a placeholder PNG), `code` (calling the game's functions) |
+| `./ssmod doctor` | checks the game copy, that it's closed, that installed files are untouched, that mods compile and that the game can load every installed dialogue |
+| `./ssmod version set 2.2` / `reset` | the version number written into the game data |
+| `./ssmod animations off` / `on` | freeze every animation (reversible) |
+| `./ssmod duck off` / `on` | silence the title-screen "please update" duck (reversible) |
+
+`./ssmod install` now also checks every installed dialogue and script at the end, so a broken one is reported
+before you launch the game. Where the game is: `ssmod.json` with `{"game": "/path/to/Sasquatch Hidden Content.app"}`,
+or the `SSMOD_GAME` environment variable (default: `~/Downloads/Sasquatch_2.1.9/Sasquatch Hidden Content.app`).
+Never point it at the App Store copy in /Applications; `doctor` warns if you do.
+
+## How it works
+* The first install copies each game file it needs into `base/` (the file without SSMod's changes). Every
+  install rebuilds from `base/` + all mods in `mods/`, so installs are repeatable and uninstalling is exact.
+  If another mod changed a file since, SSMod notices and uses that as the new base.
+* Saves are copied to `~/Downloads/SasquatchSaveBackup_<time>_ssmod` on every install.
+* Flags are saved per mod (`ssm_<mod>_<Flag>`), so two mods can both have a flag called `Met`.
+* Under the hood: scripts become NodeCanvas BehaviourTrees on an invisible object (a copy of the RV camper's AI
+  host, without its AI component); dialogues become NodeCanvas DialogueTrees; npcs are the Lake Maze camper plus Doctor Duck's
+  talk object; spots are Town's "Check shoes" interaction with an office-computer sized trigger; pickups are
+  the campsite ground item; items are cloned ItemData registered in the Item Library.

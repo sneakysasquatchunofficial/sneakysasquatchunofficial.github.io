@@ -1,0 +1,40 @@
+// Corner Shop: shows the building shorthands (box, floor, sign, label, wall), a one-block shop,
+// and the extra look options for characters. Check it with:  ./ssmod check examples/corner_shop.ssmod
+mod "Corner Shop" by "LPP Entertainment" version 1.0;
+
+item Slushie  { name = "Blue Slushie";  description = "Brain freeze in a cup.";       icon = sprite("OrangeJuice"); base = "Orange Juice"; }
+item JawBreak { name = "Jawbreaker";    description = "Lasts about a week.";          icon = sprite("cookies");     base = "Cookies"; }
+item Nachos   { name = "Gas Station Nachos"; description = "The cheese is... warm."; icon = sprite("fries");       base = "Fries"; }
+item Jerky    { name = "Squatch Jerky"; description = "Do not read the label.";       icon = sprite("diner_burger_small"); base = "Burger"; }
+
+// ---- the stall: a floor, a counter made of boxes, a sign and a wall you can't walk through
+floor in "Campground_Hub" at "Doctor Duck" + (-460, -260) size (420, 300) color #C9ADA7;
+box   in "Campground_Hub" at "Doctor Duck" + (-250, -60) size (360, 70) color #8D5524 front 1;
+box   in "Campground_Hub" at "Doctor Duck" + (-250, -30) size (380, 14) color #5B3A29 front 2;
+sign "CORNER SHOP" in "Campground_Hub" at "Doctor Duck" + (-250, 60) color #D62828 textColor #FFFFFF;
+label "open 25 hours" in "Campground_Hub" at "Doctor Duck" + (-250, 10) color #1D3557 scale 1.2;
+
+// ---- the shopkeeper: every look option
+npc Shopkeeper in "Campground_Hub" at "Doctor Duck" + (-250, 0) {
+    look {
+        shirt = #2A9D8F;  pants = #264653;  shoes = #000000;  socks = #FFFFFF;
+        skin = #C68642;   hair = #3D2314;   beard = #3D2314;  eyes = #1B4332;
+        gloves = #FFD166;
+        shirtType = LongSleeve;  pantsType = Shorts;  shoeType = Boot;
+        chubby = 0.8;
+    }
+    scale = 1.15;
+    bubble = false;
+}
+
+// ---- the shop itself: one block, the menu and the coin checks are written for you
+shop Counter in "Campground_Hub" at "Doctor Duck" + (-250, -140) {
+    greeting = "Welcome to the <item>Corner Shop</item>! Everything's fresh-ish.";
+    sell Slushie  for 15;
+    sell JawBreak for 5 as "Jawbreaker";
+    sell Nachos   for 30 as "Nachos";
+    sell Jerky    for 45;                 // a 4th item: the menu grows a "More..." page by itself
+    thanks = "Pleasure doing business!";
+    broke  = "No coins, no snacks. Shop rules.";
+    bye    = "Tell your friends!";
+}

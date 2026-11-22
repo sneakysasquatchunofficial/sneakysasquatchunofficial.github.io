@@ -1,0 +1,24 @@
+// LPP Fan Club: a sign you can "use", a name you type in, and a secret password.
+mod "LPP Fan Club" by "LPP Entertainment" version 1.0;
+
+flag Member;
+
+spot FanClubSign in "Campground_Hub" at "Doctor Duck" + (-200, 60) {
+    bubble = true;
+    dialogue {
+        if (Member) {
+            say "<item>LPP FAN CLUB</item> - Members only. Welcome back, fan!";
+        } else {
+            say "<item>LPP FAN CLUB</item> - Sign up here! Membership is free.";
+            choice {
+                "Join the fan club" => {
+                    input "YOUR FAN NAME" -> FanName;
+                    set Member;
+                    give coins 50;
+                    say "Welcome to the club, [FanName]! Here's 50 coins, just for joining.";
+                }
+                "Maybe later" => say "The club will be here.";
+            }
+        }
+    }
+}

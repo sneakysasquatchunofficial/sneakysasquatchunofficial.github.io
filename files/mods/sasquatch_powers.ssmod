@@ -1,0 +1,40 @@
+// Sasquatch Powers: brand-new abilities made from Unity engine functions (keys 1, 2, 3).
+// Works in the Campground_Hub (scripts run in the scene they're declared in).
+mod "Sasquatch Powers" by "LPP Entertainment" version 1.0;
+
+script Powers in "Campground_Hub" {
+    var giant = false;
+    var slow = false;
+
+    forever {
+        waitUntil (key("1") || key("2") || key("3"));
+
+        // 1 = BLINK: teleport 150 units in the direction you're walking (default: up)
+        if (key("1")) {
+            if (key("a") || key("left")) {
+                player.move(-150, 0);
+            } else if (key("d") || key("right")) {
+                player.move(150, 0);
+            } else if (key("s") || key("down")) {
+                player.move(0, -150);
+            } else {
+                player.move(0, 150);
+            }
+        }
+
+        // 2 = GIANT MODE on / off
+        if (key("2")) {
+            if (giant) { player.scale(1); giant = false; }
+            else       { player.scale(2); giant = true; }
+        }
+
+        // 3 = SLOW MOTION on / off
+        if (key("3")) {
+            if (slow) { timescale 1; slow = false; }
+            else      { timescale 0.4; slow = true; }
+        }
+
+        // wait until the keys are let go, so one press = one power
+        waitUntil (!key("1") && !key("2") && !key("3"));
+    }
+}

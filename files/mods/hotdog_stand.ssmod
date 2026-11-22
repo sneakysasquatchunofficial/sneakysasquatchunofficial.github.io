@@ -1,0 +1,54 @@
+// Hot Dog Heaven: a vendor near Doctor Duck sells a brand-new item.
+// Copy this file into mods/ and run:  ./ssmod install
+mod "Hot Dog Heaven" by "LPP Entertainment" version 1.0;
+
+flag MetVendor, BoughtOne;
+
+// a brand-new item, using the game's hot dog picture
+item MegaDog {
+    name = "Mega Dog";
+    description = "A foot-long hot dog from Hot Dog Heaven. Smells amazing.";
+    icon = sprite("hotdog");
+}
+
+npc Vendor in "Campground_Hub" at "Doctor Duck" + (180, 60) {
+    look { shirt = #D62828; pants = #F4F1DE; }
+    bubble = true;                                 // a "?" floats over him
+
+    dialogue {
+        if (!MetVendor) {
+            say "Welcome to <item>Hot Dog Heaven</item>! Best dogs in the park.";
+            set MetVendor;
+        } else if (BoughtOne) {
+            say "Back for another <item>Mega Dog</item>? I knew it.";
+        } else {
+            say "Hungry yet, big fella?";
+        }
+
+        choice {
+            "Buy a Mega Dog (25 coins)" => {
+                if (coins >= 25) {
+                    take coins 25;
+                    give MegaDog;
+                    set BoughtOne;
+                    say "One <item>Mega Dog</item>, extra mustard. Enjoy!";
+                } else {
+                    say "You're a little short on coins, pal.";
+                }
+            }
+            "Trade a regular Hotdog" => {
+                if (has(Hotdog)) {
+                    take Hotdog;
+                    give MegaDog;
+                    say "A regular dog for a <shake>MEGA</shake> dog? Deal!";
+                } else {
+                    say "You don't have a hot dog to trade.";
+                }
+            }
+            "No thanks" => say "Suit yourself!";
+        }
+    }
+}
+
+// a few spare Mega Dogs lying around
+pickup MegaDog x 3 in "Campground_Hub" at "Doctor Duck" + (300, -40);

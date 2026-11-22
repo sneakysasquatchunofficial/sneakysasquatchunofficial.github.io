@@ -1,0 +1,196 @@
+SSMOD MOD MAKER GUIDE: VARIABLES AND TEXTURES
+==============================================
+A plain-words guide for new modders. The full reference is SSMOD.md. Start with START HERE.txt to set up.
+You need your own copy of Sneaky Sasquatch. Never share game files.
+
+
+PART 1: VARIABLES
+=================
+
+1. FLAGS: yes/no switches that are SAVED with your game
+-------------------------------------------------------
+    flag MetVendor, RaceOn;
+
+- A flag starts as "no". set MetVendor; makes it "yes". clear MetVendor; makes it "no" again.
+- Flags are saved in your save file, so they remember things forever: quests done, doors opened.
+- Check one with  if (MetVendor) { ... }  or  if (!MetVendor) { ... }
+- Flags are how dialogues and scripts talk to each other. A dialogue does  set RaceOn;  and a script
+  waits for it with  waitUntil (RaceOn);
+- Things in the world can follow a flag:  place ... showIf RaceOn;  or  hideIf RaceOn;
+
+
+2. SCRIPT VARIABLES: numbers, text and true/false that live while you're in a place
+-----------------------------------------------------------------------------------
+    var time = 25;          // whole number
+    var speed = 1.5;        // decimal
+    var done = false;       // true/false
+    var msg = "Hello";      // text
+
+- Make them at the top of a script with var. The type comes from the first value:
+  25 is a whole number, 25.0 is a decimal.
+- They are NOT saved. They start again every time the scene loads (when you walk into the place).
+  To remember something for good, use a flag.
+- Each script has its own variables. Another script can't see them.
+
+Changing them
+    time = 5;   time += 1;   time -= 1;   time *= 2;   time /= 2;   time++;   time--;
+    c = (a + b) * 2 - 1;
+    msg = "Day " + day + "!";      // numbers turn into text by themselves
+
+Rules that trip people up
+- Whole numbers and decimals can't be mixed in one sum. Use 2.0 with decimals, 2 with whole numbers.
+- A true/false variable can't be set from another one (done = other; won't work).
+  Use if/else instead:   if (other) { done = true; } else { done = false; }
+- Maths helpers: abs min max clamp round floor ceil sqrt pow random
+  random(1, 6) includes both 1 and 6.
+
+Checking them
+    if (time > 0) { }   if (wins == 3) { }   if (done) { }   if (!done) { }
+    while (time > 0) { wait 1; time -= 1; }
+
+
+3. LISTS
+--------
+    var names = ["Ann", "Bob"];
+    var scores = [] of number;
+
+- Lists hold text, whole numbers, decimals or true/false. Not game objects.
+- add x to names;   remove x from names;   clear names;   names[0] = "Cat";
+- x = names[1];   n = count(names);   w = pick(names);   (pick = a random one)
+- if (names contains "Bob") { }
+
+
+4. GAME OBJECTS IN VARIABLES (from call and fields)
+----------------------------------------------------
+Some variables hold a piece of the game instead of a number. You get them by asking the game:
+
+    call player.get_transform() -> pt;        // the player's position object
+    player.body -> rb;                         // the player's physics body
+    call pt.get_position() -> pos;             // a position (x, y, z)
+
+- The name after -> becomes a variable of the right kind by itself. You don't write var.
+- Then you can call functions on it:   call rb.set_mass(60.0);
+- You can't make an object variable with var, and you can't put obno sjects in a list.
+- If a call might find nothing, check before using it:
+      call UnityEngine.Object.op_Implicit(thing) -> found;
+      if (found) { ... }
+- Find what you can call:   ./ssmod functions WORD
+  Find a class's fields:    the error message lists them if you get one wrong.
+
+Fields (a value on a game object)
+    player.moveForceScaler = force;       // change a field
+    player.isGhost -> ghost;              // read a field into a variable
+    CamperBaseLook("MyNpc").skinColor = #E2F693;
+
+
+5. BUILT-IN THINGS YOU CAN USE
+------------------------------
+    coins                    if (coins >= 25) { take coins 25; }   give coins 100;
+    key("m")                 true while that key is held. Names: "a".."z", "0".."9", "space",
+                             "left shift", "up", "down", "left", "right"
+    near(Target, 150)        true when you're within 150 of an npc/spot of your mod or a named object
+    has(Item)                you have that item
+    player                   the sasquatch
+    event player.OnInteriorChange    wait for the game to say something happened:
+                                     waitUntil (event player.OnInteriorChange);
+
+Key presses fire every frame while held. To react once per press, remember the last state:
+    var mWas = false;
+    forever {
+        if (key("m")) { if (!mWas) { log "pressed"; } mWas = true; } else { mWas = false; }
+        wait 0.02;
+    }
+
+
+6. SEEING YOUR VARIABLES (debugging)
+------------------------------------
+    log "time is " + time;
+Then run  ./ssmod log -f  while you play. It shows your log lines and any script errors.
+
+
+PART 2: TEXTURES, PICTURES AND SHAPES
+=====================================
+
+7. THE GAME'S OWN PICTURES (sprites)
+------------------------------------
+    item MegaDog { name = "Mega Dog"; icon = sprite("hotdog"); }
+
+- sprite("name") uses a picture that's already in the game, like an item icon.
+- Find names with   ./ssmod sprites WORD   (for example ./ssmod sprites hot)
+- These stay inside your own game. You never copy them out or share them.
+
+
+8. YOUR OWN PICTURES (PNG or JPG)
+---------------------------------
+    image Tower from "art/tower.png" scale 0.8;
+    place image Tower in "Airport" at (-2250, -40) [scale 0.5] [rotate 10] [flip] [front 1];
+
+- Put the file in mods/art/ (the path is from the .ssmod file's folder).
+- 1 pixel = 1 world unit unless you use scale or size (300, 520).
+- Transparency is kept.
+- A picture stands on its bottom edge like a building: at is where it touches the ground.
+  You walk in front of it below that point and behind it above.
+- Bigger than 2048 pixels gets shrunk to fit.
+- color #FFE0E0 tints it (white = no change).
+- Pictures are just art: you walk through them. Add a wall if it should be solid.
+- Each picture is stored once per scene, however many times you place it.
+
+Make it fit in
+- The game is FLAT: solid colours, no shading, no gradients, no shiny highlights, simple outlines.
+  Draw that way and your art looks like it belongs.
+- Draw it yourself, or use art you're allowed to use. Don't copy the game's characters.
+
+
+9. SHAPES WITHOUT ANY DRAWING (meshes)
+--------------------------------------
+    mesh Star {
+        color #FFD166;
+        polygon (0, 60) (14, 19) (57, 19) (23, -7) (35, -49) (0, -23) (-35, -49) (-23, -7) (-57, 19) (-14, 19);
+        circle (0, 0) 12 #F77F00;
+        rect (-80, -100) (160, 30) #5B3A29;
+    }
+    place mesh Star in "Campground_Hub" at (1900, 300) scale 0.5;
+
+- Shapes are drawn in the order written, later ones on top.
+- Points are around the mesh's own (0, 0). +y is up.
+- From a drawing app:   mesh Rocket from "art/rocket.svg" scale 1.5;
+  Filled shapes only (no strokes, text or gradients).
+
+Quick blocks with no mesh at all
+    box   in "Scene" at (x, y) size (300, 60) color #8D5524;
+    floor in "Scene" at (x, y) size (2000, 900) color #CFE8D5 layer 4;
+    sign  "GATE 1" in "Scene" at (x, y) color #1D3557 textColor #FFFFFF;
+    label "open 25 hours" in "Scene" at (x, y);
+    wall  in "Scene" from (x0, y) to (x1, y);    // solid
+
+
+10. COLOURS
+-----------
+- Write colours as #RRGGBB: #D62828 red, #FFD166 yellow, #2A9D8F teal, #FFFFFF white.
+- Used by look { shirt = ...; }, color on places, boxes, signs, text and hud.
+
+
+11. DRAWING ORDER (what's in front)
+-----------------------------------
+- Lower on the screen = in front. That's automatic.
+- front 1, 2, 3... nudges something forward when two things are at the same height.
+- layer N is for floors: higher layers sit on top of lower ones.
+- hud puts text or a picture on the screen itself, on top of everything:
+      hud Score "Score: 0" in "Campground_Hub" at (0, 260) color #FFD166 scale 1.4;
+
+
+12. WHERE THINGS GO
+-------------------
+- Positions are world units. Find spots with   ./ssmod where "Campground_Hub" duck
+- Scene names:   ./ssmod scenes
+- Put something near a known object:   at "Doctor Duck" + (180, 60)
+- "everywhere" as the scene puts a script or hud in every playable place.
+
+
+13. TRY IT
+----------
+1. Copy something from examples/ into mods/.
+2. Change a colour, a word or a number.
+3. Check it:     ./ssmod check
+4. Install it:   double-click Install Mods.command (close the game first).
+5. Play, and watch  ./ssmod log -f  if something doesn't work.

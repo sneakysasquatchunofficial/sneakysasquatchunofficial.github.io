@@ -8,6 +8,19 @@
 <h1>Sneaky Sasquatch (unofficial)</h1>
 <h2>FAQ</h2>
 
+<h3>Ask a question</h3>
+<p>Type it here. When you hit send it opens GitHub with your question already filled in, you just press "Create" there. You need a free GitHub account. Answers show up on this page.</p>
+<form id="ask">
+<p>Short question:<br><input type="text" id="qt" size="60" maxlength="120" required></p>
+<p>More details (optional):<br><textarea id="qb" rows="5" cols="60"></textarea></p>
+<p><button type="submit">send</button></p>
+</form>
+
+<h3>Questions people asked</h3>
+<div id="list"><p>loading...</p></div>
+
+<h3>Old questions</h3>
+
 <p><b>Is this the official site?</b><br>
 No. Just a fan page. The game is made by RAC7 Games.</p>
 
@@ -20,9 +33,54 @@ It comes with an Apple Arcade subscription.</p>
 <p><b>Is it on Android or PC?</b><br>
 Not that I know of. It's an Apple Arcade game.</p>
 
-<p><b>Do you have cheats / free stuff / mod downloads?</b><br>
-No, and be careful with sites that say they do.</p>
+<p><b>Do you have mods?</b><br>
+Yes, for the Mac version, on the <a href="downloads.html">downloads page</a>. They don't have any game files in them. Be careful with other sites that say they have free stuff or a modded game to download.</p>
+
+<p><b>Do mods work on iPad?</b><br>
+No. iPad and iPhone don't let you get to the game's files.</p>
+
 <p><a href="index.html">back</a></p>
 <p>Fan made. Not the official site and not connected to RAC7 Games or Apple. Sneaky Sasquatch belongs to them.</p>
+
+<script>
+var REPO = "sneakysasquatchunofficial/sneakysasquatchunofficial.github.io";
+document.getElementById("ask").onsubmit = function (e) {
+  e.preventDefault();
+  var t = document.getElementById("qt").value.trim();
+  var b = document.getElementById("qb").value.trim();
+  if (!t) return;
+  var url = "https://github.com/" + REPO + "/issues/new?template=question.md" +
+    "&title=" + encodeURIComponent(t) +
+    "&body=" + encodeURIComponent(b || "(asked from the FAQ page)");
+  window.open(url, "_blank");
+};
+
+var list = document.getElementById("list");
+function el(tag, text) { var x = document.createElement(tag); if (text) x.textContent = text; return x; }
+var ME = { OWNER: 1, MEMBER: 1, COLLABORATOR: 1 };
+
+fetch("https://api.github.com/repos/" + REPO + "/issues?state=all&per_page=50")
+  .then(function (r) { if (!r.ok) throw r.status; return r.json(); })
+  .then(function (qs) {
+    qs = qs.filter(function (q) { return !q.pull_request && q.state_reason !== "not_planned"; });
+    list.innerHTML = "";
+    if (!qs.length) { list.appendChild(el("p", "nobody asked anything yet")); return; }
+    qs.forEach(function (q) {
+      var p = el("p");
+      p.appendChild(el("b", q.title));
+      p.appendChild(el("br"));
+      var a = el("span", "no answer yet");
+      p.appendChild(a);
+      list.appendChild(p);
+      if (q.comments > 0) {
+        fetch(q.comments_url).then(function (r) { return r.json(); }).then(function (cs) {
+          var ans = cs.filter(function (c) { return ME[c.author_association]; });
+          if (ans.length) a.textContent = ans[ans.length - 1].body;
+        }).catch(function () {});
+      }
+    });
+  })
+  .catch(function () { list.innerHTML = ""; list.appendChild(el("p", "couldn't load questions right now, try again later")); });
+</script>
 </body>
 </html>

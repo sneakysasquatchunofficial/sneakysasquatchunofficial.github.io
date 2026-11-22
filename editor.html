@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Save Editor - Sneaky Sasquatch Unofficial</title>
+</head>
+<body>
+<h1>Sneaky Sasquatch save editor</h1>
+<p>Mac only. Everything happens in your browser, your files don't get uploaded anywhere.</p>
+<p><b>BACK UP YOUR SAVE FIRST.</b> Read <a href="guides.html#backup">how</a>. Quit the game before you swap files.</p>
+
+<h2>1. pick your save files</h2>
+<p>Go to your save folder (<a href="guides.html#where">where is it?</a>), open the slot folder (default, default2 or default3) and pick <b>sasquatch.stuff</b> and <b>variables.stuff</b>. You can pick both at once.</p>
+<p><input type="file" id="files" multiple accept=".stuff"></p>
+<p id="status">no files loaded</p>
+
+<h2>2. change stuff</h2>
+<p>Coins: <input type="number" id="coins" min="0"> (sasquatch.stuff)</p>
+<p>Town speed limit: <input type="number" id="pd"> Highway speed limit: <input type="number" id="yt"> (variables.stuff, can go way past the slider)</p>
+<p>Finish chapters (variables.stuff):<br>
+<input type="checkbox" id="tut"> tutorials<br>
+<input type="checkbox" id="c1"> chapter 1<br>
+<input type="checkbox" id="c2"> chapter 2<br>
+<input type="checkbox" id="c3"> chapter 3<br>
+<input type="checkbox" id="c4"> chapter 4<br>
+<input type="checkbox" id="unl"> unlock everything flags</p>
+<p>Teleport to (sasquatch.stuff): <select id="tp"><option value="">don't teleport</option></select><br>
+you show up at the first door of that place. some places are weird if you aren't there in the story yet.</p>
+
+<h2>3. download the new files</h2>
+<p><button id="dlS">download sasquatch.stuff</button> <button id="dlV">download variables.stuff</button></p>
+<p>Put them back in the same slot folder (replace the old ones), then open the game.</p>
+
+<p><a href="downloads.html">back to downloads</a></p>
+<p>Fan made. Not the official site and not connected to RAC7 Games or Apple. Use at your own risk.</p>
+
+<script>
+var MAPS=[["Apartments", "c6f0eca5820a7ae4f9d5904786b98a74"], ["Campground CampsiteA", "8576179ecb645724f9ee4aa0525c772e"], ["Campground CampsiteB", "6763eea6e41a879408cf8613bddb8c6d"], ["Campground CampsiteCD", "bcae57359098a5948b6984a62b8ed3cb"], ["Campground CaveEntrance", "cf4c9a1f0f39c824fb8c88c8da9dad05"], ["Campground CaveInterior", "41399389493348a408b47987e754a039"], ["Campground Hub", "eba1dfee3f1e73b45bf48c7d42fc2246"], ["Campground Lake", "5211336acc7bc5d4b95f16ebeb9b1859"], ["Campground Lake Underwater", "5dd33ede060b3b24fbdc4f23c9693398"], ["Campground LakeMaze", "e052f10e4dc33bd4090db911165b8491"], ["Campground ParkingLot", "851c3e2334c2f324184277e524c4d024"], ["Campground RVPark", "ab54f4c4f1d1af8498d3228098d5aed2"], ["Campground RVParkTop", "840c14b6794c684459d8b05bfccf463d"], ["Campground River", "7e21c19f688b3454ca69cd6f5097bdfe"], ["Campground River Underwater", "a341ecb72ae827f4089fd1547edc43d5"], ["Campground RiverHighway", "7a9fc314c854ca849837bbec11aa2c95"], ["Campground RiverLaketoGolf", "9633c0fbc8bf5d543bcfef5de16e92d1"], ["Campground TreeInterior", "8930916232d01244a9062947aec24046"], ["Campground WaterfallInterior", "1e4776f558d9f3141b72ed309ff2ec09"], ["DirtPark Highway", "3109c5e7e67cfef4a996b11f0bdfd689"], ["DirtTrack", "d3ec1f6d5c29b5f4db4b0a4863ec3491"], ["Farm", "08d011b4c6f2a402fb64145581146c1d"], ["Farm Cave", "7f69ada80968f4b99bfacd94fb1a3dd4"], ["Farm Town", "1ee68c2aa23c2463b9f7af6d16d8a5da"], ["Farm Town Road Block", "518cdfde7f7c84dbc94789669b3b4cbe"], ["Farm Town Underwater", "45cdc07e4a62d4691ae73cee820c5180"], ["FireStation Floor 2", "15d76a9848f7b493e870b7deba42c61d"], ["GolfCourse CaveInterior", "963db55768d2df348add93df916ddb25"], ["GolfCourse DrivingRange", "e2462d9d9c2853641a584aa5842cbb84"], ["GolfCourse DrivingRange Underwater", "8f506474009fd4b43a6d6d2dbbf95c1e"], ["GolfCourse Entrance", "7b512eb08c1822346a07bf07c3925174"], ["GolfCourse Long Drive", "e52944023fbeaa749ba25b65025a25a7"], ["GolfCourse Long Drive Underwater", "f689e641b5ec7470d923eae12eedd349"], ["Golfcourse", "90c09a01e2ed344959ba4b59c583b2d2"], ["Highway 4WayIntersection", "f4617792c91f17d4b87089879062cea8"], ["Highway East MountainPass", "dc7474886c190d044b53079255fbc91a"], ["Highway TreasureSpot", "425cd7c9c058d05429ab1463c28c669b"], ["Highway West", "a89a600886a4bdd4b8498736055aa9c6"], ["Highway West Underwater", "363a724a585694998a30e8661b40bc0b"], ["Island", "a2026402baa8e894b98b8039f85824e4"], ["Island CaveInterior", "9bbf662e12d62f841a646bce4a5f89bb"], ["Island Underwater", "65f4f6542ff0f4de590b580416ff3543"], ["Marina", "ac8b9bd17b43c064f8b64ceb3a013e7a"], ["Marina River", "5c0233d07db57f2488ef768e2809aa26"], ["Marina River Underwater", "ad4954439bb3254459b989ed1663e8a9"], ["Marina Underwater", "f24e8e3c09469e844a7101ee484f5147"], ["Museum", "0cafa5152e5c76f47adc47245cad4f74"], ["Ocean", "15ca7354b1ebc4af3aca4f78699a3f8d"], ["Ocean Rocky", "e6346e5ad10bc6b4882f4fe660a08bf1"], ["Ocean Rocky Cave", "98afbfdbef710494ba1a214cd6a06682"], ["Ocean Rocky Underwater", "c13101f490be3a64ab08f57029d5095b"], ["Office Basement", "c29a1b87807446a42b0006a75eb79d79"], ["Office Floor 2", "2c94bc13fc92bff498f14160283302ad"], ["Office Floor 3", "1b78623ccda01d24a8d6d6b66315cae6"], ["Office Floor 4", "e6158fa2c1d01bb4493778fe28c3a006"], ["Office Floor 5", "907dfc902b5bd354489541d7d91ed370"], ["Office Floor 6", "bb89d31001c36ed42b6dc258b16bd9e9"], ["PoliceStation Floor 2", "25e0fb904a0908e4a9b22cfb9367880a"], ["Racetrack", "26c7ef3776de5c5448b0cd95f8ed0c8d"], ["Racetrack Entrance", "a664d3aef85446047b876d11a648a0d5"], ["Racetrack SecretArea", "416c780ecabf761428de0f8fc9017bb4"], ["Sawmill", "ca256aa3d9ecd1a4cb87ae2a43f8adf2"], ["Seaport", "5310f20dfa679ed4d9ac9e696f552d51"], ["Seaport Office Floor 2", "1aa2907b9fec3404fb7ed83ea8bd248c"], ["Seaport Office Floor Tower", "b9ccd90f89fc8914f9f003523c205bbe"], ["Sewer", "4901dbd93469a434b9a7e37f60c35cff"], ["Sewer Fox Den", "ec98ae0e29332be40ae88b047b100981"], ["Sewer Pump Room", "6a5b5d9a02efe3549ae62c9e57651664"], ["Sewer Seaport", "ee650696a87ebd54ca80f39aebee7ec5"], ["Sewer SecretWarehouse", "d9d3ee51fcdaacf44afe2e7803e03499"], ["Sewer Storage Room", "acdf6d7b640d3654e86758b5c1354291"], ["Sewer Storage Room Underwater", "fac990495b46b9b478c94817c749e37e"], ["Sewer Underwater", "4ac6e04e157214954bda2dfb61a4b187"], ["Sewer Waterfall", "248eab97b7ec2304186c3fa2160e1d8e"], ["SkiSlope", "0740a648fd02648f5a163f788f1e7d1a"], ["Snow CaveInterior", "4b1ac88e619e8e84e970d5643c852cf2"], ["Snow CaveInterior Underwater", "ca675638f097b8246bc48f306553d1c1"], ["Snow Hot Springs", "c8902e20d1b646f478ab33c8347b78a4"], ["Snow Main", "0d9789d23538e06448100b44fa18af4c"], ["Snow Main Underwater", "f0cfec9d6fa9f7e448983bd22929c999"], ["Snow Mid Mountain", "56cda9539517142d6b1abbd72e2f28a6"], ["Snow Peak", "c82593e1a63e74fc18803d56114222d9"], ["Snow Snowball", "f63cc2cc075a445b883c7fc44acfed05"], ["Snow Track", "4bca25ef5a9b56d469f3cedfd3d2dc09"], ["Stripmall", "b6dc289ca0b07b3469d9ea799486f033"], ["Town", "b69b56e70bba4c14ea3f8ee5b1a6f47d"], ["TownHall Floor 2", "98d7d8791f02b4744ab9d9ad2c3e8c62"], ["TownHall Floor 3", "51dae43ff2c17e84f98b2fcd1e9a3282"], ["TownHall Floor B1", "ec97b36eb56070146bd4b02bd802fbe1"], ["TownHall Floor B2", "b5bdb211e746453499bb64b6f415dac0"]];
+var CH={
+tut:["raceat","racintro","racsneak","firstday","fatcat_intro_completed","treasurehunt_started","golftut","Wi"],
+c1:["bear_fish_completed","cave_quest_completed","duck_hat_completed","fatcat_intro_completed","golfer_quest_completed","skier_quest_completed","race_driver_completed","q_talking_fish_completed","treasure_digup_completed","fatcat_ending_completed","treasurehunt_completed","celebration_quest_completed"],
+c2:["7Tna","zp19"],
+c3:["cSeY","x4rG","LfqB","8fng","e6","DT","BZ","P2"],
+c4:["ht","8Efi","21","DC","ga","h2","LI","jC","SE","YR","I8","B3","f4","Bf","Tj","35","im","hr","WN"],
+unl:["shortcut_unlocked","q2EG","nqJM","FZ","l3","Of","a7","vgCw","1t","4c","xw","uj","HL","GA","Yz","rg","qa","h7","SW"]};
+var S=null,V=null;
+function g(i){return document.getElementById(i)}
+var sel=g("tp");
+MAPS.forEach(function(m){var o=document.createElement("option");o.value=m[1];o.textContent=m[0];sel.appendChild(o)});
+function show(){
+  var t=[];
+  if(S){t.push("sasquatch.stuff loaded (day "+S.day+", "+S.coins+" coins)");g("coins").value=S.coins;
+    var here=MAPS.filter(function(m){return m[1]==S.current_map})[0];if(here)t.push("you are in: "+here[0]);}
+  if(V){t.push("variables.stuff loaded");g("pd").value=V.PD;g("yt").value=V.Yt;
+    var f=V.flags||{};for(var k in CH)g(k).checked=CH[k].every(function(x){return f[x]==1});}
+  g("status").textContent=t.length?t.join(". "):"no files loaded";
+}
+g("files").onchange=function(e){
+  Array.prototype.forEach.call(e.target.files,function(file){
+    var r=new FileReader();
+    r.onload=function(){
+      try{var j=JSON.parse(r.result);}catch(err){alert(file.name+" isn't a save file I can read");return;}
+      if("current_map" in j)S=j;else if("flags" in j)V=j;else{alert(file.name+": pick sasquatch.stuff or variables.stuff");return;}
+      show();
+    };
+    r.readAsText(file);
+  });
+};
+function save(obj,name){
+  var b=new Blob([JSON.stringify(obj)],{type:"application/octet-stream"});
+  var a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();a.remove();
+}
+g("dlS").onclick=function(){
+  if(!S){alert("load sasquatch.stuff first");return;}
+  var c=parseInt(g("coins").value,10);if(!isNaN(c))S.coins=c;
+  if(sel.value){S.current_map=sel.value;S.current_map_entrance=0;}
+  save(S,"sasquatch.stuff");
+};
+g("dlV").onclick=function(){
+  if(!V){alert("load variables.stuff first");return;}
+  var p=parseInt(g("pd").value,10),y=parseInt(g("yt").value,10);
+  if(!isNaN(p))V.PD=p;if(!isNaN(y))V.Yt=y;
+  V.flags=V.flags||{};
+  for(var k in CH)if(g(k).checked)CH[k].forEach(function(x){V.flags[x]=1});
+  save(V,"variables.stuff");
+};
+window.__ed={get S(){return S},get V(){return V},CH:CH};
+</script>
+</body>
+</html>

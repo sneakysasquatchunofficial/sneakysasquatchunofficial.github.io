@@ -1,0 +1,59 @@
+// Race the Clock: real code! A coach starts a countdown, you race to the finish line.
+// Tests: a running script, variables, while loops, waiting, distance checks, speech bubbles, weather.
+mod "Race the Clock" by "LPP Entertainment" version 1.0;
+
+flag RaceOn, EverWon;
+
+npc Coach in "Campground_Hub" at "Doctor Duck" + (-150, -80) {
+    look { shirt = #FFD60A; pants = #1D3557; }
+    bubble = true;
+    dialogue {
+        if (RaceOn) {
+            say "What are you doing? RUN!";
+        } else {
+            say "Think you're fast? Reach the <item>finish line</item> by the rocks in <item>25 seconds</item>!";
+            choice {
+                "Let's race!" => { set RaceOn; say "On your marks..."; }
+                "Not now" => say "Scared of a little cardio?";
+            }
+        }
+    }
+}
+
+spot FinishLine in "Campground_Hub" at "Rocks" + (0, -60) {
+    dialogue { say "The <item>finish line</item>. Talk to the coach to start a race!"; }
+}
+
+// the script runs all the time in the background
+script Race in "Campground_Hub" by Coach {
+    var time = 25;
+    var wins = 0;
+
+    forever {
+        waitUntil (RaceOn);
+        speak "3...";   wait 1;
+        speak "2...";   wait 1;
+        speak "1...";   wait 1;
+        speak "GO GO GO!";
+        weather Rainy;                    // dramatic race weather
+        time = 25;
+
+        while (time > 0 && !near(FinishLine, 90)) {
+            wait 1;
+            time -= 1;
+            if (time == 10) { speak "10 seconds left!"; }
+            if (time == 3)  { speak "3... 2... 1..."; }
+        }
+
+        if (near(FinishLine, 90)) {
+            wins += 1;
+            speak "WINNER! Here's 100 coins!";
+            give coins 100;
+            set EverWon;
+        } else {
+            speak "Too slow! Talk to me to try again.";
+        }
+        weather Clear;
+        clear RaceOn;
+    }
+}

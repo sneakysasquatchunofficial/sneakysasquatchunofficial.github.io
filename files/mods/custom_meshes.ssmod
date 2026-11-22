@@ -1,0 +1,41 @@
+// Custom meshes: your own shapes in the game. Write them as polygons, or draw them in any vector editor
+// (Inkscape, Figma, Illustrator) and import the .svg. Check with:  ./ssmod check examples/custom_meshes.ssmod
+mod "Custom Meshes" by "LPP Entertainment" version 1.0;
+
+flag Launched;
+
+// ---- written by hand: points are in world units around the mesh's own (0, 0); +y is up
+mesh Star {
+    color #FFD166;
+    polygon (0, 60) (14, 19) (57, 19) (23, -7) (35, -49) (0, -23) (-35, -49) (-23, -7) (-57, 19) (-14, 19);
+    circle (0, 0) 12 #F77F00;
+}
+
+mesh Arrow {
+    polygon #2A9D8F (-60, -15) (10, -15) (10, -40) (60, 0) (10, 40) (10, 15) (-60, 15);     // concave is fine
+}
+
+mesh House {
+    rect (-80, 0) (160, 110) #B5523B;                     // rect: bottom-left corner, then width and height
+    polygon #5B3A29 (-100, 110) (100, 110) (0, 190);      // roof
+    rect (-20, 0) (40, 64) #33415C;                       // door
+    rect (-64, 44) (30, 30) #A8DADC;                      // windows
+    rect (34, 44) (30, 30) #A8DADC;
+}
+
+// ---- drawn in an editor: filled shapes only (no strokes, text or pictures); it is centred on the drawing
+mesh Rocket from "art/rocket.svg" scale 1.5;
+
+place mesh House  in "Campground_Hub" at "Doctor Duck" + (500, 100);
+place mesh Star   in "Campground_Hub" at "Doctor Duck" + (500, 330) rotate 15;
+place mesh Star   in "Campground_Hub" at "Doctor Duck" + (640, 300) scale 0.5;
+place mesh Arrow  in "Campground_Hub" at "Doctor Duck" + (330, 40) hideIf Launched;
+place mesh Arrow  in "Campground_Hub" at "Doctor Duck" + (330, 40) flip color #D62828 showIf Launched;
+place mesh Rocket in "Campground_Hub" at "Doctor Duck" + (760, 120) front 1;
+
+spot Launch_Button in "Campground_Hub" at "Doctor Duck" + (760, -60) {
+    dialogue {
+        if (Launched) { clear Launched; say "Countdown cancelled. The arrow points right again."; }
+        else { set Launched; say "<shake>3... 2... 1...</shake> nothing happens. But the arrow turned red!"; }
+    }
+}
