@@ -6,17 +6,17 @@
 </head>
 <body>
 <h1>Sneaky Sasquatch save editor</h1>
-<p>Mac only. Everything happens in your browser, your files don't get uploaded anywhere.</p>
-<p><b>BACK UP YOUR SAVE FIRST.</b> Read <a href="guides.html#backup">how</a>. Quit the game before you swap files.</p>
+<p>Mac saves only. It all runs in your browser and nothing gets uploaded.</p>
+<p><b>Back up your save first</b> (<a href="guides.html#backup">how</a>), and keep the game closed while you swap files.</p>
 
-<h2>1. pick your save files</h2>
-<p>Go to your save folder (<a href="guides.html#where">where is it?</a>), open the slot folder (default, default2 or default3) and pick <b>sasquatch.stuff</b> and <b>variables.stuff</b>. You can pick both at once.</p>
+<h2>1. Load your save</h2>
+<p>Open your save folder (<a href="guides.html#where">where is it?</a>), go into the slot (default, default2 or default3) and pick <b>sasquatch.stuff</b> and <b>variables.stuff</b>. Both at once is fine.</p>
 <p><input type="file" id="files" multiple accept=".stuff"></p>
 <p id="status">no files loaded</p>
 
-<h2>2. change stuff</h2>
+<h2>2. Change things</h2>
 <p>Coins: <input type="number" id="coins" min="0"> (sasquatch.stuff)</p>
-<p>Town speed limit: <input type="number" id="pd"> Highway speed limit: <input type="number" id="yt"> (variables.stuff, can go way past the slider)</p>
+<p>Town speed limit: <input type="number" id="pd"> Highway speed limit: <input type="number" id="yt"> (variables.stuff, no limit, ignores the slider)</p>
 <p>Finish chapters (variables.stuff):<br>
 <input type="checkbox" id="tut"> tutorials<br>
 <input type="checkbox" id="c1"> chapter 1<br>
@@ -25,11 +25,11 @@
 <input type="checkbox" id="c4"> chapter 4<br>
 <input type="checkbox" id="unl"> unlock everything flags</p>
 <p>Teleport to (sasquatch.stuff): <select id="tp"><option value="">don't teleport</option></select><br>
-you show up at the first door of that place. some places are weird if you aren't there in the story yet.</p>
+You spawn at that scene's first entrance. Places you haven't reached in the story can act strange.</p>
 
-<h2>3. download the new files</h2>
+<h2>3. Save the new files</h2>
 <p><button id="dlS">download sasquatch.stuff</button> <button id="dlV">download variables.stuff</button></p>
-<p>Put them back in the same slot folder (replace the old ones), then open the game.</p>
+<p>Put them back in the same slot folder over the old ones, then start the game.</p>
 
 <p><a href="downloads.html">back to downloads</a></p>
 <p>Fan made. Not the official site and not connected to RAC7 Games or Apple. Use at your own risk.</p>

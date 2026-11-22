@@ -7,61 +7,57 @@
 <body>
 <h1>Sneaky Sasquatch (unofficial)</h1>
 <h2>Mod guides</h2>
-<p>All of this is for the Mac version (from the App Store). iPhone and iPad don't let you get to the save files.</p>
+<p>All Mac (App Store version). On iPhone and iPad you can't get at the save files, so none of this works there.</p>
 
 <ul>
 <li><a href="#where">Where your save is</a></li>
-<li><a href="#backup">Back up your save</a></li>
-<li><a href="#install">Put a ready-made save in</a></li>
+<li><a href="#backup">Backing up</a></li>
+<li><a href="#install">Installing a save</a></li>
 <li><a href="#speed">Speed limit past the slider</a></li>
-<li><a href="#teleport">Teleport anywhere</a></li>
-<li><a href="#chapters">Finish chapters</a></li>
+<li><a href="#teleport">Teleporting</a></li>
+<li><a href="#chapters">Finishing chapters</a></li>
 <li><a href="#prison">Prison escape glitch</a></li>
 <li><a href="#ssmod">SSMod</a></li>
 </ul>
 
 <h3 id="where">Where your save is</h3>
-<p>In Finder press Cmd+Shift+G and paste this:</p>
+<p>In Finder, hit Cmd+Shift+G and paste:</p>
 <pre>~/Library/Containers/com.rac7.SneakySasquatchMac/Data/Library/Application Support/com.rac7.SneakySasquatchMac/</pre>
-<p>Inside there are folders called <b>default</b>, <b>default2</b> and <b>default3</b>. Those are your 3 save slots (slot 1, 2, 3). The files end in .stuff and they're just text (JSON), you can open them in TextEdit.</p>
-<p>Important ones:<br>
-sasquatch.stuff - coins, day, which place you're in, hunger<br>
-variables.stuff - quest flags, speed limits and lots of other stuff<br>
-inventory.stuff - your items<br>
-map folder - one file per place</p>
+<p>The folders <b>default</b>, <b>default2</b> and <b>default3</b> are save slots 1, 2 and 3. Everything ending in .stuff is plain JSON. No encryption, TextEdit opens it fine.</p>
+<p>The ones you'll care about: sasquatch.stuff has coins, the day, hunger and which scene you're in. variables.stuff has the quest flags and a pile of other settings, speed limits included. inventory.stuff is your items, and the map folder has one file per scene.</p>
 
-<h3 id="backup">Back up your save</h3>
-<p>Quit the game. Go to the save folder, copy the slot folder (like default) and paste it somewhere safe like your Desktop. To go back, quit the game and put that copy back.</p>
+<h3 id="backup">Backing up</h3>
+<p>Quit the game first. Then copy the slot folder (say, default) somewhere safe. Restoring is the same thing backwards, again with the game closed. If the game is running it'll just write over whatever you put there.</p>
 
-<h3 id="install">Put a ready-made save in</h3>
+<h3 id="install">Installing a save</h3>
 <ol>
 <li>Quit the game.</li>
-<li>Back up the slot you're going to use.</li>
-<li>Unzip the save. You get a folder called default.</li>
-<li>Rename it to the slot you want (default = slot 1, default2 = slot 2, default3 = slot 3).</li>
-<li>Drag it into the save folder and replace the old one.</li>
-<li>Open the game and load that slot.</li>
+<li>Back up the slot you're about to use.</li>
+<li>Unzip the save. You'll get a folder called default.</li>
+<li>Rename it for the slot you want: default, default2 or default3.</li>
+<li>Drop it in the save folder and replace the old one.</li>
+<li>Start the game and load that slot.</li>
 </ol>
 
 <h3 id="speed">Speed limit past the slider</h3>
-<p>When you're the mayor the speed limit slider only goes so far. But in variables.stuff the town limit is the key <b>PD</b> and the highway limit is <b>Yt</b>. Change those numbers to anything (even 999999 or negative) and the game uses it. The <a href="editor.html">save editor</a> does this for you. Changing mayor.stuff does nothing, that's just where the slider was.</p>
+<p>As mayor you get a speed limit slider with a pretty small range. The actual values are in variables.stuff, though: <b>PD</b> is the town limit and <b>Yt</b> is the highway. The game takes whatever number you put there, 999999 or even negative, and doesn't clamp it. mayor.stuff only remembers where the slider was, so editing it does nothing. The <a href="editor.html">save editor</a> can set both.</p>
 
-<h3 id="teleport">Teleport anywhere</h3>
-<p>sasquatch.stuff has <b>current_map</b>, which is a long code for the place you're in. Change it to another place's code and you load in there. The <a href="editor.html">save editor</a> has a list of all the places so you don't need the codes. Some places act weird if you're not that far in the story yet.</p>
+<h3 id="teleport">Teleporting</h3>
+<p>In sasquatch.stuff, <b>current_map</b> is the ID of the scene you're in. It's a long hex string, not the scene name. Swap in another scene's ID and you load in there next time. The <a href="editor.html">save editor</a> has the full list so you don't have to dig the IDs out yourself. Expect weirdness if you jump somewhere the story hasn't unlocked yet.</p>
 
-<h3 id="chapters">Finish chapters</h3>
-<p>Each chapter being done is just a bunch of flags set to 1 in variables.stuff (in "flags"). The <a href="editor.html">save editor</a> has a checkbox for each chapter. This skips the story, so only do it on a save you don't care about.</p>
+<h3 id="chapters">Finishing chapters</h3>
+<p>A finished chapter is just a set of flags turned on in variables.stuff, under "flags". The game keeps a list of which flags belong to which chapter, and the <a href="editor.html">save editor</a> uses those lists. You skip the whole story this way, so do it on a save you don't mind ruining.</p>
 
 <h3 id="prison">Prison escape glitch</h3>
-<p>No save editing for this one, it works in the normal game. Your dog has to know enough tricks to do paw shake.</p>
+<p>This one's in the normal game, no editing needed. Your dog has to know paw shake.</p>
 <ol>
-<li>Get the dog right up against the prison wall so its head clips through to your side.</li>
+<li>Push the dog up against the prison wall until its head clips through to your side.</li>
 <li>Do paw shake.</li>
-<li>The handshake moves you both into the handshake spot and doesn't check for walls, so you end up on the other side.</li>
 </ol>
+<p>The handshake snaps both of you into fixed spots next to each other without checking for walls, so you get pulled straight through.</p>
 
 <h3 id="ssmod">SSMod</h3>
-<p>SSMod adds stuff to a copy of the game instead of just changing your save. Get it on the <a href="downloads.html">downloads page</a>. Mods are text files ending in .ssmod. Put them in SSMod's mods folder and double-click Install Mods.command. Want to make your own? Read the <a href="files/MOD-MAKER-GUIDE.txt">mod maker guide</a>.</p>
+<p>SSMod works on a copy of the game instead of your save, so it can add things that don't exist at all, not just flip values. It's on the <a href="downloads.html">downloads page</a>. Mods are plain text .ssmod files. Put them in SSMod's mods folder and run Install Mods.command. If you want to write one, start with the <a href="files/MOD-MAKER-GUIDE.txt">mod maker guide</a>.</p>
 
 <p><a href="index.html">back</a></p>
 <p>Fan made. Not the official site and not connected to RAC7 Games or Apple. Sneaky Sasquatch belongs to them.</p>
